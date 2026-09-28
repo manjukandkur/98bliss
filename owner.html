@@ -87,6 +87,7 @@ form.f button.save{width:100%;margin-top:16px;padding:14px;border:0;border-radiu
 .card.old{background:#fff7f7;border:1px solid #fecaca}.card.old b.n{text-decoration:line-through;color:#6b7280}
 .repl{background:#fee2e2;color:#991b1b;border-radius:10px;padding:8px 10px;margin-top:8px;font-size:14px;font-weight:600}
 .lvl{font-size:11px;background:#fca311;color:#14213d;border-radius:999px;padding:1px 7px;font-weight:700;margin-left:4px}
+body.nomoney .money,body.nomoney .sheet,body.nomoney #sheetLink,body.nomoney .billbtn{display:none!important}
 .billbtn{background:#fff7ed!important;border-color:#fdba74!important;color:#9a3412!important}
 .tellink{white-space:nowrap;font-weight:600;color:#1d4ed8;text-decoration:none}
 </style>
@@ -101,7 +102,7 @@ form.f button.save{width:100%;margin-top:16px;padding:14px;border:0;border-radiu
     <button data-tab="amc">AMC</button>
     <button data-tab="mail">Mail <span id="nMail"></span></button>
     <button data-tab="jobs">Works</button>
-    <button data-tab="money">Money</button>
+    <button data-tab="money" class="money">Money</button>
     <button data-tab="contacts" id="contactsTab" class="hide">Contacts</button>
     <button data-tab="staff" id="staffTab" class="hide">Staff</button>
   </nav>
@@ -214,7 +215,8 @@ function showTab(t) {
 }
 
 // ---- ask
-const SUGG = ["Which plumber attended recently?", "Who repaired the gate recently?", "When is the next Lift AMC due?", "Who is inside now?", "What was paid for the AC AMC?", "Unpaid bills"];
+const SUGG = ["Which plumber attended recently?", "Who repaired the gate recently?", "When is the next Lift AMC due?", "Who is inside now?"].concat(BOOT.money === false ? [] : ["What was paid for the AC AMC?", "Unpaid bills"]);
+document.body.classList.toggle("nomoney", BOOT.money === false);
 $("sugg").innerHTML = SUGG.map((q) => `<button type="button" data-ask="${esc(q)}">${esc(q)}</button>`).join("");
 $("askForm").onsubmit = (e) => { e.preventDefault(); doAsk($("askQ").value); };
 async function doAsk(q) {
@@ -334,13 +336,13 @@ async function openHistory(key) {
     <div class="line">${stBadge(c.status)} ${c.rating ? `<span class="badge ${c.rating === "Do not call again" ? "bad" : esc(c.rating)}">${esc(c.rating)}</span>` : ""}</div>
     ${c.notes ? `<div class="line">📝 ${esc(c.notes)}</div>` : ""}
     ${c.replaced ? `<div class="repl">⛔ Replaced ${d(c.replaced.on)}${c.replaced.by_name ? ` by <b>${esc(c.replaced.by_name)}</b> · ${esc(c.replaced.by_mobile)}` : ""}${c.replaced.note ? " — " + esc(c.replaced.note) : ""}</div>` : ""}
-    <div class="line">${h.first_seen ? `First seen ${d(h.first_seen)} · last seen <b>${d(h.last_seen)}</b> · ` : ""}${h.visits.length} visit${h.visits.length == 1 ? "" : "s"} · ${h.jobs.length} work${h.jobs.length == 1 ? "" : "s"} (${h.jobs.filter((j) => ["Open", "Scheduled", "In Progress"].includes(j.status)).length} pending) · paid <b>${inr(h.total_paid)}</b></div>
+    <div class="line">${h.first_seen ? `First seen ${d(h.first_seen)} · last seen <b>${d(h.last_seen)}</b> · ` : ""}${h.visits.length} visit${h.visits.length == 1 ? "" : "s"} · ${h.jobs.length} work${h.jobs.length == 1 ? "" : "s"} (${h.jobs.filter((j) => ["Open", "Scheduled", "In Progress"].includes(j.status)).length} pending) <span class="money">· paid <b>${inr(h.total_paid)}</b></span></div>
     ${acts(c.mobile, null, c.email)}
-    <div class="acts"><a href="#" data-form="person" data-pre='${esc(JSON.stringify(c))}'>Edit / rate</a><a href="#" data-form="job" data-pre='${esc(JSON.stringify({ vendor_key: c.key }))}'>+ New work</a><a href="#" data-form="payment" data-pre='${esc(JSON.stringify({ vendor_key: c.key }))}'>Payment</a></div>
+    <div class="acts"><a href="#" data-form="person" data-pre='${esc(JSON.stringify(c))}'>Edit / rate</a><a href="#" data-form="job" data-pre='${esc(JSON.stringify({ vendor_key: c.key }))}'>+ New work</a><a href="#" class="money" data-form="payment" data-pre='${esc(JSON.stringify({ vendor_key: c.key }))}'>Payment</a></div>
     <h2>Visits</h2>${tbl(["In", "Out", "Work done / purpose", "Entered by"], h.visits.map((v) => [dt(v.check_in) + (v.in_approx ? "~" : ""), v.check_out ? dt(v.check_out) + (v.out_approx ? "~" : "") : "inside", esc(v.work_done || v.meeting || ""), esc(v.registered_by || "")]))}
-    <h2>Works (all time, newest first)</h2>${tbl(["Date", "Place", "Work", "Status", "Billed", "Due"], h.jobs.slice().sort((a, b) => String(b.completed_on || b.reported_on).localeCompare(String(a.completed_on || a.reported_on))).map((j) => [d(j.completed_on || j.reported_on), esc(j.place || ""), desk("job", j.id, j.subject) + (j.work_done ? `<div class="muted" style="font-size:12px">${esc(String(j.work_done).split("\n").pop())}</div>` : ""), esc(j.status), inr(j.billed), j.balance ? `<span class="red">${inr(j.balance)}</span>` : "—"]))}
-    <h2>AMC / warranty</h2>${tbl(["What", "Period", "Status", "Amount"], h.amcs.map((a) => [desk("amc", a.id, a.equipment), (a.start_date ? d(a.start_date) + " – " : "to ") + d(a.end_date), esc(a.status), a.amount ? inr(a.amount) : ""]))}
-    <h2>Payments</h2>${tbl(["Date", "Amount", "Mode", "Ref"], h.payments.map((p) => [d(p.date), inr(p.amount), esc(p.mode), esc(p.reference || "")]))}
+    <h2>Works (all time, newest first)</h2>${tbl(h.money === false ? ["Date", "Place", "Work", "Status"] : ["Date", "Place", "Work", "Status", "Billed", "Due"], h.jobs.slice().sort((a, b) => String(b.completed_on || b.reported_on).localeCompare(String(a.completed_on || a.reported_on))).map((j) => [d(j.completed_on || j.reported_on), esc(j.place || ""), desk("job", j.id, j.subject) + (j.work_done ? `<div class="muted" style="font-size:12px">${esc(String(j.work_done).split("\n").pop())}</div>` : ""), esc(j.status)].concat(h.money === false ? [] : [inr(j.billed), j.balance ? `<span class="red">${inr(j.balance)}</span>` : "—"])))}
+    <h2>AMC / warranty</h2>${tbl(["What", "Period", "Status"].concat(h.money === false ? [] : ["Amount"]), h.amcs.map((a) => [desk("amc", a.id, a.equipment), (a.start_date ? d(a.start_date) + " – " : "to ") + d(a.end_date), esc(a.status)].concat(h.money === false ? [] : [a.amount ? inr(a.amount) : ""])))}
+    <h2 class="money">Payments</h2>${tbl(["Date", "Amount", "Mode", "Ref"], h.payments.map((p) => [d(p.date), inr(p.amount), esc(p.mode), esc(p.reference || "")]))}
     <h2>Emails</h2>${tbl(["Date", "Subject", "Due"], (h.mails || []).map((m) => [d(m.received), `<a href="${esc(m.link)}" target="_blank">${esc(m.subject)}</a>`, d(m.due)]))}`);
 }
 
@@ -377,7 +379,7 @@ const F = {
     <div><label>Type</label><select name="job_type">${opts(["Breakdown", "AMC Visit", "Installation", "Inspection", "Other"], v.job_type)}</select></div></div>
     <label>Under AMC</label><select name="amc_id"><option value=""></option>${(data ? data.amc : []).map((a) => `<option value="${esc(a.id)}" ${a.id === v.amc_id ? "selected" : ""}>${esc(a.equipment)}</option>`).join("")}</select>
     <label>Scheduled on</label><input type="date" name="scheduled_on" value="${esc(v.scheduled_on || "")}">
-    <div class="row"><div><label>Quoted ₹</label><input name="quoted" inputmode="decimal" value="${esc(v.quoted || "")}"></div>
+    <div class="row money"><div><label>Quoted ₹</label><input name="quoted" inputmode="decimal" value="${esc(v.quoted || "")}"></div>
     <div><label>Billed ₹</label><input name="billed" inputmode="decimal" value="${esc(v.billed || "")}"></div></div>
     <label>Problem / request</label><textarea name="description">${esc(v.description || "")}</textarea>
     <label>Work done</label><textarea name="work_done">${esc(v.work_done || "")}</textarea>` }),
@@ -395,8 +397,8 @@ const F = {
     <div class="row"><div><label>Payment due</label><input type="date" name="payment_due" value="${esc(v.payment_due || "")}"></div>
     <div><label>Visits in contract</label><input name="visits_promised" inputmode="numeric" value="${esc(v.visits_promised || "")}"></div></div>
     <div class="row"><div><label>Remind before end (days)</label><input name="remind_days" inputmode="numeric" value="${esc(v.remind_days || 30)}"></div>
-    <div><label>Amount finalised ₹ 🔒</label><input name="amount" inputmode="decimal" value="${esc(v.amount || "")}"></div></div>
-    <div class="muted" style="font-size:12px">🔒 Amount is private: only Owner/Manager see it (History, Ask, Money). Never emailed, never on the AMC card.</div>
+    <div class="money"><label>Amount finalised ₹ 🔒</label><input name="amount" inputmode="decimal" value="${esc(v.amount || "")}"></div></div>
+    <div class="muted money" style="font-size:12px">🔒 Amount is private: only Owner/Manager see it (History, Ask, Money). Never emailed, never on the AMC card.</div>
     <label>Notes</label><textarea name="notes">${esc(v.notes || "")}</textarea>
     ${v.id ? `<label><input type="checkbox" name="cancelled" style="width:auto"> Cancelled</label>` : ""}` }),
   payment: (v) => ({ title: "Record payment", fn: "savePayment", html: `
@@ -563,7 +565,8 @@ async function loadContacts() {
 async function loadDash() {
   data = await call("dashboard", $("days").value);
   const x = data, today = x.today;
-  $("me").textContent = BOOT.role === "owner" ? "You · Owner" : BOOT.name + " · Manager";
+  $("me").textContent = BOOT.role === "owner" ? "You · Owner" : BOOT.name + " · " + (BOOT.role === "manager" ? "Manager" : (BOOT.staff_role || "Staff") + " (no money)");
+  document.body.classList.toggle("nomoney", x.money === false);
   $("staffTab").classList.toggle("hide", BOOT.role !== "owner");
   $("contactsTab").classList.toggle("hide", BOOT.role !== "owner");
   $("insideList").innerHTML = x.inside.length ? x.inside.map((r) => `<div class="card"><div class="top"><div><b class="n">${esc(r.person_name)}</b>
@@ -591,7 +594,7 @@ async function loadDash() {
         ${a.mail_link ? `<a href="${esc(a.mail_link)}" target="_blank">Open email</a>` : ""}${billBtn(a.bill, "Bill")}${(a.pay_bills || []).map((b) => billBtn(b, b.label)).join("")}
         ${a.vendor_key ? `<button data-hist="${esc(a.vendor_key)}">History</button>` : ""}
         ${a.kind !== "Warranty" ? `<button data-form="job" data-pre='${esc(JSON.stringify({ amc_id: a.id, vendor_key: a.vendor_key, trade: a.category, job_type: "AMC Visit", status: "Scheduled", subject: a.equipment + " - AMC visit", scheduled_on: a.next_visit_due }))}'>Visit</button>` : ""}
-        <button data-form="payment" data-pre='${esc(JSON.stringify({ amc_id: a.id, vendor_key: a.vendor_key }))}'>Pay</button>
+        <button class="money" data-form="payment" data-pre='${esc(JSON.stringify({ amc_id: a.id, vendor_key: a.vendor_key }))}'>Pay</button>
         ${a.status === "Renewal Due" || a.status === "Expired" ? `<button data-renew="${esc(a.id)}">Renew</button>` : ""}</div></div>`;
   }).join("") : '<div class="empty">No AMC or warranty yet — add them, or pick them from the Mail tab.</div>';
 

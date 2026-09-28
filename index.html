@@ -200,7 +200,7 @@ const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":
 const COURIERS = BOOT.couriers;
 $("house").textContent = BOOT.house;
 $("who").innerHTML = esc(BOOT.name + (BOOT.staff_role && BOOT.staff_role !== BOOT.name ? " · " + BOOT.staff_role : "")) +
-  (BOOT.role === "owner" || BOOT.role === "manager" ? ` · <a href="${BOOT.url}?k=${BOOT.k}&p=owner">Owner page</a>` : "");
+  (BOOT.role === "owner" || BOOT.role === "manager" || BOOT.full ? ` · <a href="${BOOT.url}?k=${BOOT.k}&p=owner">${BOOT.role === "owner" || BOOT.role === "manager" ? "Owner page" : "All details"}</a>` : "");
 $("whoHint").textContent = "Entered by " + BOOT.name + (BOOT.staff_role && BOOT.staff_role !== BOOT.name ? " (" + BOOT.staff_role + ")" : "");
 $("trade").innerHTML += BOOT.trades.map((t) => `<option>${esc(t)}</option>`).join("");
 let type = "Visitor", courier = "", known = null, autoType = false;
