@@ -134,6 +134,8 @@ body.nomoney .money,body.nomoney .sheet,body.nomoney #sheetLink,body.nomoney .bi
 <main id="tab-amc" class="hide"><div id="amcList"></div><div class="add"><a href="#" data-form="amc">+ Add AMC / warranty</a><a href="#" class="sheet">All AMCs (sheet)</a></div></main>
 <main id="tab-mail" class="hide"><div class="muted" style="margin:4px 0 8px">Found in 98blisshome's Gmail: AMC, warranty, service and bill emails. Checked every hour.</div><div id="mailList"></div></main>
 <main id="tab-staff" class="hide">
+  <h2>Gate team — names tapped at check-in / check-out</h2><div id="teamList"></div>
+  <div class="add"><a href="#" data-form="team">+ Add a name</a></div>
   <h2>Who can open what</h2><div id="staffList"></div>
   <div class="add"><a href="#" data-form="staff">+ Add staff link</a><a href="#" id="docLink">Service record (Doc)</a></div>
 </main>
@@ -152,7 +154,7 @@ body.nomoney .money,body.nomoney .sheet,body.nomoney #sheetLink,body.nomoney .bi
   <div class="chips" id="wstat"><button data-ws="pending" class="on">Pending</button><button data-ws="blocked">Waiting on other work</button><button data-ws="done">Done (all time)</button></div>
   <div id="wStats" class="muted"></div>
   <div id="jobList"></div>
-  <input id="wAddPh" type="file" accept="image/*" capture="environment" class="hide">
+  <input id="wAddPh" type="file" accept="image/*" multiple class="hide">
 </main>
 <main id="tab-money" class="hide">
   <div class="stats" id="moneyStats"></div>
@@ -270,7 +272,7 @@ async function loadWho() {
 
 // ---- one click handler for the whole page
 document.body.addEventListener("click", async (e) => {
-  const t = e.target.closest("[data-bill],[data-hist],[data-form],[data-edit],[data-renew],[data-ask],[data-mail],[data-staff],[data-copy],[data-cact],[data-cf],[data-unrepl],[data-cur],[data-wv],[data-ws],[data-jst],[data-wph],[data-addph],.sheet,.close,#sheet,#docLink,#cRun");
+  const t = e.target.closest("[data-team],[data-bill],[data-hist],[data-form],[data-edit],[data-renew],[data-ask],[data-mail],[data-staff],[data-copy],[data-cact],[data-cf],[data-unrepl],[data-cur],[data-wv],[data-ws],[data-jst],[data-wph],[data-addph],.sheet,.close,#sheet,#docLink,#cRun");
   if (!t) return;
   if (t.tagName === "A" && !t.href.startsWith("tel:") && !t.href.startsWith("mailto:") && !t.href.includes("wa.me") && t.target !== "_blank") e.preventDefault();
   if (t.id === "sheet" && e.target !== t) return;
@@ -278,6 +280,7 @@ document.body.addEventListener("click", async (e) => {
   if (t.classList.contains("sheet")) return window.open(data ? data.sheet_url : "#", "_blank");
   if (t.id === "cRun") { t.textContent = "Checking…"; try { await call("runContactsCheck"); toast("✓ Contacts checked"); loadContacts(); } catch (err) { toast(err.message, 1); } t.textContent = "↻ Check now"; return; }
   if (t.dataset.bill) return openBill(JSON.parse(t.dataset.bill));
+  if (t.dataset.team) { try { await call("setTeamActive", t.dataset.id, t.dataset.team === "on"); toast("✓ Updated"); loadDash(); } catch (err) { toast(err.message, 1); } return; }
   if (t.dataset.wph) {
     openSheet('<div class="empty">Loading photo…</div>');
     try { const src = await call("workPhoto", t.dataset.job, t.dataset.wph); openSheet(`<img src="${esc(src)}" style="width:100%;border-radius:12px" alt="">`); } catch (err) { openSheet(`<div class="empty">${esc(err.message)}</div>`); }
@@ -373,7 +376,7 @@ const F = {
     <label>Waits for (do these first)</label><select name="depends_on" multiple size="4">${(W ? W.jobs : []).filter((j) => j.id !== v.id && ["Open", "Scheduled", "In Progress"].includes(j.status)).map((j) => `<option value="${esc(j.id)}" ${(v.depends_on || []).includes(j.id) ? "selected" : ""}>${esc([j.place, j.subject].filter(Boolean).join(" — "))}${j.vendor_name ? " (" + esc(j.vendor_name) + ")" : ""}</option>`).join("")}</select>
     <div class="muted" style="font-size:12px">Hold ⌘/Ctrl (or tap several on a phone) to pick more than one. Leave empty if it can start now.</div>
     <label>Photo${v.id ? " (adds one more)" : " of the problem"}</label>
-    <div class="wphoto"><label class="pbtn" for="wPhotoIn">📷 Take / choose photo</label><input id="wPhotoIn" type="file" accept="image/*" capture="environment" class="hide" data-photo="1"><img id="wPhotoPrev" alt=""></div>
+    <div class="wphoto"><label class="pbtn" for="wPhotoIn">📷 Add photos (camera or gallery — several at once)</label><input id="wPhotoIn" type="file" accept="image/*" multiple class="hide" data-photo="1"><span id="wPhotoPrevs" class="thumbs"></span><img id="wPhotoPrev" style="display:none" alt=""></div>
     ${(v.photos || []).length ? `<div class="thumbs">${v.photos.map((p) => `<img src="${esc(p.thumb)}" data-wph="${esc(p.id)}" data-job="${esc(v.id)}" alt="">`).join("")}</div>` : ""}
     <div class="row"><div><label>Trade</label><select name="trade"><option value=""></option>${opts(BOOT.trades, v.trade)}</select></div>
     <div><label>Type</label><select name="job_type">${opts(["Breakdown", "AMC Visit", "Installation", "Inspection", "Other"], v.job_type)}</select></div></div>
@@ -418,6 +421,11 @@ const F = {
       .map((x) => `<option value="${esc(x.key)}">${esc(x.name)}${x.trades ? " — " + esc(x.trades) : ""}</option>`).join("")}<option value="">— nobody yet / just stop using —</option></select>
     <div class="muted" style="font-size:12px">New person not listed? Add them first (Who to call → + Add a person).</div>
     <label>Why (optional)</label><textarea name="note" placeholder="e.g. better service, overcharged, conflict of interest"></textarea>` }),
+  team: () => ({ title: "Add a name to the gate team", fn: "saveTeamMember", html: `
+    <label>Name (as they will tap it)</label><input name="name" required placeholder="e.g. Ramesh">
+    <div class="row"><div><label>Role</label><select name="role">${opts(["Security", "Driver", "Manager", "Other"], "Security")}</select></div>
+    <div><label>Mobile</label><input name="mobile" type="tel"></div></div>
+    <div class="muted" style="font-size:12px;margin-top:8px">Everyone uses the same staff link; on every check-in and check-out they tap their own name, so you always know who let someone in or out.</div>` }),
   staff: () => ({ title: "Add staff link", fn: "addStaff", html: `
     <label>Name</label><input name="name" required>
     <label>Level</label><select name="role">${opts(BOOT.staff_roles, "Driver")}</select>
@@ -433,7 +441,7 @@ function openForm(kind, pre) {
     const fd = Object.fromEntries(new FormData(ev.target).entries());
     ev.target.querySelectorAll("select[multiple]").forEach((s) => (fd[s.name] = [...s.selectedOptions].map((x) => x.value).join(", ")));
     const ph = ev.target.querySelector("input[data-photo]");
-    if (ph && ph.files && ph.files[0]) { fd.photo = await shrink(ph.files[0], 1000, 0.72); fd.photo_thumb = await shrink(ph.files[0], 140, 0.6); }
+    if (ph && ph.files && ph.files.length) fd.photos = await shrinkAll(ph.files);   // medium pictures (about 1000 px) + small previews
     if (ev.target.cancelled) fd.cancelled = ev.target.cancelled.checked;
     const btn = ev.target.querySelector("button.save"); btn.disabled = true; btn.textContent = "Saving…";
     try {
@@ -467,15 +475,22 @@ function shrink(file, max, q) {
     img.src = URL.createObjectURL(file);
   });
 }
+// several photos at once (28 Sep 2026): each shrunk on the phone to a medium picture + a small preview; 8 per work at most
+async function shrinkAll(files) {
+  const out = [];
+  for (const f of [...files].slice(0, 8)) out.push({ photo: await shrink(f, 1000, 0.72), thumb: await shrink(f, 140, 0.6) });
+  return out;
+}
 $("wAddPh").onchange = async () => {
-  const f = $("wAddPh").files[0]; if (!f || !wAddFor) return;
-  toast("Uploading photo…");
-  try { await call("addWorkPhoto", wAddFor, await shrink(f, 1000, 0.72), await shrink(f, 140, 0.6), ""); toast("✓ Photo added"); loadWorks(); }
+  const fs = $("wAddPh").files; if (!fs.length || !wAddFor) return;
+  toast("Uploading " + fs.length + " photo" + (fs.length > 1 ? "s" : "") + "…");
+  try { const ps = await shrinkAll(fs); await call("addWorkPhoto", wAddFor, ps.map((p) => p.photo), ps.map((p) => p.thumb), ""); toast("✓ " + ps.length + " photo" + (ps.length > 1 ? "s" : "") + " added"); loadWorks(); }
   catch (err) { toast(err.message, 1); }
 };
-document.addEventListener("change", async (e) => {   // preview in the work form
-  if (e.target.id !== "wPhotoIn" || !e.target.files[0]) return;
-  const p = $("wPhotoPrev"); p.src = await shrink(e.target.files[0], 300, 0.6); p.style.display = "block";
+document.addEventListener("change", async (e) => {   // previews in the work form
+  if (e.target.id !== "wPhotoIn" || !e.target.files.length) return;
+  const box = $("wPhotoPrevs"); box.innerHTML = "";
+  for (const f of [...e.target.files].slice(0, 8)) { const i = document.createElement("img"); i.src = await shrink(f, 200, 0.6); box.appendChild(i); }
 });
 const OPEN = ["Open", "Scheduled", "In Progress"], PRI = { Urgent: 0, High: 1, Normal: 2, Low: 3 };
 $("wq").oninput = () => { clearTimeout(wTimer); wTimer = setTimeout(renderWorks, 200); };
@@ -565,10 +580,11 @@ async function loadContacts() {
 async function loadDash() {
   data = await call("dashboard", $("days").value);
   const x = data, today = x.today;
-  $("me").textContent = BOOT.role === "owner" ? "You · Owner" : BOOT.name + " · " + (BOOT.role === "manager" ? "Manager" : (BOOT.staff_role || "Staff") + " (no money)");
+  $("me").textContent = BOOT.role === "owner" ? "You · Owner" : BOOT.name + " · " + (BOOT.role === "manager" ? "Admin" : (BOOT.staff_role || "Staff") + " (no money)");
   document.body.classList.toggle("nomoney", x.money === false);
-  $("staffTab").classList.toggle("hide", BOOT.role !== "owner");
-  $("contactsTab").classList.toggle("hide", BOOT.role !== "owner");
+  const admin = BOOT.role === "owner" || BOOT.role === "manager";   // 2 levels (28 Sep 2026): Admin = owner + Bliss Manager
+  $("staffTab").classList.toggle("hide", !admin);
+  $("contactsTab").classList.toggle("hide", !admin);
   $("insideList").innerHTML = x.inside.length ? x.inside.map((r) => `<div class="card"><div class="top"><div><b class="n">${esc(r.person_name)}</b>
       <div class="muted">${esc([r.entry_type === "Maintenance" ? "Service" : r.entry_type, r.trade, r.company || r.courier].filter(Boolean).join(" · "))}</div>
       <div class="line muted">since ${dt(r.check_in)}${r.in_approx ? "~" : ""}${r.registered_by ? " · by " + esc(r.registered_by) : ""}</div></div>
@@ -628,8 +644,12 @@ async function loadDash() {
   $("unpaidList").innerHTML = unpaid.length ? `<table><tr><th>For</th><th>Vendor</th><th>Due</th></tr>${unpaid.map((r) => `<tr>${r.map((c) => `<td>${c}</td>`).join("")}</tr>`).join("")}</table>` : '<div class="empty">Nothing unpaid.</div>';
   $("payList").innerHTML = x.payments.length ? `<table><tr><th>Date</th><th>Vendor</th><th>Amount</th><th>Mode</th></tr>${x.payments.map((p) => `<tr><td>${d(p.date)}</td><td>${p.vendor_key ? `<a href="#" data-hist="${esc(p.vendor_key)}">${esc(p.vendor_name || "")}</a>` : esc(p.notes ? p.notes.split(" — ")[0].slice(0, 30) : "")}</td><td>${inr(p.amount)}</td><td>${esc(p.mode)}${p.bill ? " " + billBtn(p.bill, "Bill") : ""}</td></tr>`).join("")}</table>` : '<div class="empty">No payments recorded.</div>';
 
-  if (BOOT.role === "owner") {
-    $("staffList").innerHTML = `<div class="card"><b class="n">You</b> <span class="lvl">Owner</span><div class="line muted">Everything, including this Staff tab</div></div>` +
+  if (admin) {
+    $("teamList").innerHTML = (x.team || []).length ? x.team.map((m) => `<div class="card"><div class="top"><div><b class="n">${esc(m.name)}</b> <span class="lvl">${esc(m.role || "")}</span>
+        <div class="line muted">${esc(m.mobile || "")}</div></div><span class="badge ${m.active ? "in" : "bad"}">${m.active ? "ON" : "OFF"}</span></div>
+        <div class="acts">${m.mobile ? `<a class="call" href="${telHref(m.mobile)}">📞 Call</a>` : ""}<button data-team="${m.active ? "off" : "on"}" data-id="${esc(m.name)}">${m.active ? "Switch off" : "Switch on"}</button></div></div>`).join("")
+      : '<div class="empty">No names yet. Add the 2 security guards and the drivers — then every check-in and check-out asks “who is doing this?”.</div>';
+    $("staffList").innerHTML = `<div class="card"><b class="n">${BOOT.role === "owner" ? "You" : esc(BOOT.name)}</b> <span class="lvl">Admin</span><div class="line muted">Everything, including this Staff tab</div></div>` +
       x.staff.map((s) => `<div class="card"><div class="top"><div><b class="n">${esc(s.name)}</b> <span class="lvl">${esc(s.role)}</span>
         <div class="line muted">${esc(s.sees)}${s.last_used ? " · last used " + dt(s.last_used) : ""}</div></div>
         <span class="badge ${s.active ? "in" : "bad"}">${s.active ? "ON" : "OFF"}</span></div>

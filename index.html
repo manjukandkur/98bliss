@@ -165,6 +165,7 @@ textarea{min-height:70px;font-size:16px}
   <label>Came in</label>
   <div class="when" id="cameIn"><button type="button" data-v="" class="on">Now</button><button type="button" data-v="15">15 min ago</button><button type="button" data-v="30">30 min ago</button><button type="button" data-v="60">1 h ago</button><button type="button" data-v="pick">Pick time</button></div>
   <input id="cameAt" type="datetime-local" class="hide" style="margin-top:6px">
+  <div id="byBox" class="hide"><label>Who is entering this? <b style="color:var(--bad)">tap your name</b></label><div class="when" id="byChips"></div></div>
   <div class="hint" id="whoHint"></div>
 
   <label>Photo</label>
@@ -189,7 +190,7 @@ textarea{min-height:70px;font-size:16px}
     <div class="hint" id="wStats"></div>
     <div id="jobList"></div>
   </div>
-  <input id="wAddPh" type="file" accept="image/*" capture="environment" class="hide">
+  <input id="wAddPh" type="file" accept="image/*" multiple class="hide">
 </main>
 <div id="sheet" class="sheet"><div class="box" id="sheetBox"></div></div>
 
@@ -200,8 +201,19 @@ const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":
 const COURIERS = BOOT.couriers;
 $("house").textContent = BOOT.house;
 $("who").innerHTML = esc(BOOT.name + (BOOT.staff_role && BOOT.staff_role !== BOOT.name ? " · " + BOOT.staff_role : "")) +
-  (BOOT.role === "owner" || BOOT.role === "manager" || BOOT.full ? ` · <a href="${BOOT.url}?k=${BOOT.k}&p=owner">${BOOT.role === "owner" || BOOT.role === "manager" ? "Owner page" : "All details"}</a>` : "");
+  (BOOT.role === "owner" || BOOT.role === "manager" || BOOT.full ? ` · <a href="${BOOT.url}?k=${BOOT.k}&p=owner">${BOOT.role === "owner" || BOOT.role === "manager" ? "Owner page" : "🔎 Ask & all details"}</a>` : "");
 $("whoHint").textContent = "Entered by " + BOOT.name + (BOOT.staff_role && BOOT.staff_role !== BOOT.name ? " (" + BOOT.staff_role + ")" : "");
+// ---- who is doing it, by NAME (28 Sep 2026): one shared link, each check-in and check-out records the person
+const TEAM = BOOT.team || [];
+let byName = "";
+const nameChips = (attr, id) => TEAM.map((n) => `<button type="button" ${attr}="${esc(n)}"${id ? ` data-id="${esc(id)}"` : ""}>${esc(n)}</button>`).join("");
+function showBy() {
+  $("byBox").classList.toggle("hide", !TEAM.length);
+  $("byChips").innerHTML = nameChips("data-by");
+  $("whoHint").classList.toggle("hide", !!TEAM.length);
+}
+$("byChips").onclick = (e) => { const b = e.target.closest("button"); if (!b) return; byName = b.dataset.by; [...$("byChips").children].forEach((x) => x.classList.toggle("on", x === b)); };
+showBy();
 $("trade").innerHTML += BOOT.trades.map((t) => `<option>${esc(t)}</option>`).join("");
 let type = "Visitor", courier = "", known = null, autoType = false;
 
@@ -398,6 +410,7 @@ $("save").onclick = async () => {
   if (!name) return toast("Enter the name", 1);
   if (type === "Maintenance" && !$("trade").value && !$("service_job").value) return toast("Choose the work type", 1);
   if (cameIn === "pick" && !$("cameAt").value) return toast("Pick the time they came in", 1);
+  if (TEAM.length && !byName) { $("byBox").scrollIntoView({ block: "center" }); return toast("Tap your name first (who is entering this?)", 1); }
   $("save").disabled = true; $("save").textContent = "Saving…";
   try {
     const data = {
@@ -405,13 +418,14 @@ $("save").onclick = async () => {
       company: type === "Delivery" ? "" : $("company").value.trim(),
       meeting: $("meeting").value.trim(), purpose: $("purpose").value.trim(),
       people_count: $("people_count").value || 1,
-      came_in: cameIn === "pick" ? $("cameAt").value : cameIn,
+      came_in: cameIn === "pick" ? $("cameAt").value : cameIn, by_name: byName,
     };
     if (type === "Delivery") Object.assign(data, { courier, parcel_count: $("parcel_count").value, received_by: $("received_by").value.trim() });
     if (type === "Maintenance") Object.assign(data, { trade: $("trade").value, job_id: $("service_job").value });
     if (photoData) Object.assign(data, { photo: photoData, thumb: thumbData });
     await call("checkIn", data);
-    toast("✓ " + name + " checked in");
+    toast("✓ " + name + " checked in" + (byName ? " by " + byName : ""));
+    byName = ""; showBy();   // next entry: the person taps their name again
     resetForm();
     refreshCount(); loadRegulars();
   } catch (e) {
@@ -445,6 +459,7 @@ async function loadInside() {
         ${r.earlier_day ? `<span class="red">Not checked out — when did they leave?</span>` : ""}
         <div class="out">
           <button data-out="${esc(r.id)}" class="big-out">Check out${r.earlier_day ? "" : " now"}</button>
+          ${TEAM.length ? `<div class="hide" id="ob-${esc(r.id)}"><label style="margin-top:6px">Who is checking out? <b style="color:var(--bad)">tap your name</b></label><div class="when">${nameChips("data-outby", r.id)}</div></div>` : ""}
           <div class="opt">${r.entry_type === "Maintenance" ? `<a href="#" data-shownote="${esc(r.id)}">+ Note of work done</a>` : ""}${r.earlier_day ? "" : `<a href="#" data-showleft="${esc(r.id)}">Left earlier?</a>`}</div>
           ${r.entry_type === "Maintenance" ? `<textarea class="hide" placeholder="What work was done? (optional)" id="w-${esc(r.id)}"></textarea>` : ""}
           <div class="${r.earlier_day ? "" : "hide"}" id="lw-${esc(r.id)}"><label style="margin-top:4px">Left</label>
@@ -468,14 +483,16 @@ $("insideList").onclick = async (e) => {
     return;
   }
   const chip = e.target.closest(".when button");
-  if (chip) {
+  if (chip && !chip.dataset.outby) {
     const box = chip.parentElement, id = box.dataset.left;
     [...box.children].forEach((x) => x.classList.toggle("on", x === chip));
     leftChoice[id] = chip.dataset.v;
     $("t-" + id).classList.toggle("hide", chip.dataset.v !== "pick");
     return;
   }
-  const n = e.target.dataset && e.target.dataset.out; if (!n) return;
+  const ob = e.target.closest("[data-outby]");
+  const n = ob ? ob.dataset.id : e.target.dataset && e.target.dataset.out; if (!n) return;
+  if (!ob && TEAM.length) { const box = $("ob-" + n); box.classList.remove("hide"); box.scrollIntoView({ block: "center" }); return; }   // first tap: show the names
   const w = $("w-" + n);
   const late = $("c-" + n).classList.contains("late");
   const choice = leftChoice[n] !== undefined ? leftChoice[n] : (late ? "pick" : "");
@@ -483,7 +500,7 @@ $("insideList").onclick = async (e) => {
   if (choice === "pick" && !leftAt) return toast("Pick roughly when they left", 1);
   e.target.disabled = true;
   try {
-    await call("checkOut", n, w ? w.value.trim() : "", leftAt);
+    await call("checkOut", n, w ? w.value.trim() : "", leftAt, ob ? ob.dataset.outby : "");
     toast("✓ Checked out"); delete leftChoice[n]; loadInside();
   } catch (err) { toast(err.message, 1); e.target.disabled = false; }
 };
@@ -497,7 +514,7 @@ async function loadToday() {
       <span class="tag ${esc(r.entry_type)}">${r.entry_type === "Maintenance" ? "Service" : esc(r.entry_type)}</span>
       <b>${esc(r.person_name)}</b>${r.mobile ? `<a class="callbtn" href="tel:+91${esc(String(r.mobile).replace(/\D/g, "").slice(-10))}">📞 Call</a>` : ""}
       <small>${esc(r.company || r.courier || "")}</small>
-      <small>In ${fmt(r.check_in)}${r.in_approx ? "~" : ""}${r.check_out ? " · Out " + fmt(r.check_out) + (r.out_approx ? "~" : "") : " · still inside"}${r.registered_by ? " · by " + esc(r.registered_by) : ""}</small>
+      <small>In ${fmt(r.check_in)}${r.in_approx ? "~" : ""}${r.registered_by ? " by " + esc(r.registered_by) : ""}${r.check_out ? " · Out " + fmt(r.check_out) + (r.out_approx ? "~" : "") + (r.out_by ? " by " + esc(r.out_by) : "") : " · still inside"}</small>
       ${r.work_done ? `<small>Work: ${esc(r.work_done)}</small>` : ""}
     </div></div>`).join("") : '<div class="empty">No entries today yet.</div>';
 }
@@ -571,19 +588,19 @@ function workForm(v) {
     <label>Waits for (do these first)</label><select name="depends_on" multiple size="3">${(W ? W.jobs : []).filter((j) => j.id !== v.id && OPEN.includes(j.status)).map((j) => `<option value="${esc(j.id)}" ${(v.depends_on || []).includes(j.id) ? "selected" : ""}>${esc([j.place, j.subject].filter(Boolean).join(" — "))}</option>`).join("")}</select>
     <div class="hint">Leave empty if it can start now.</div>
     <label>Photo${v.id ? " (adds one more)" : " of the problem"}</label>
-    <div class="wphoto"><label class="pbtn" for="wPhotoIn">📷 Take / choose photo</label><input id="wPhotoIn" type="file" accept="image/*" capture="environment" class="hide"><img id="wPhotoPrev" alt=""></div>
+    <div class="wphoto"><label class="pbtn" for="wPhotoIn">📷 Add photos (camera or gallery — several at once)</label><input id="wPhotoIn" type="file" accept="image/*" multiple class="hide"></div><div class="thumbs" id="wPhotoPrevs"></div>
     <label>Details (optional)</label><textarea name="description">${esc(v.description || "")}</textarea>
     <button class="save" type="submit">Save</button></form>`);
-  $("wPhotoIn").onchange = async () => { const f = $("wPhotoIn").files[0]; if (!f) return; const p = $("wPhotoPrev"); p.src = await shrink(f, 300, 0.6); p.style.display = "block"; };
+  $("wPhotoIn").onchange = async () => { const box = $("wPhotoPrevs"); box.innerHTML = ""; for (const f of [...$("wPhotoIn").files].slice(0, 8)) { const i = document.createElement("img"); i.src = await shrink(f, 200, 0.6); box.appendChild(i); } };
   $("wForm").onsubmit = async (ev) => {
     ev.preventDefault();
     const fd = Object.fromEntries(new FormData(ev.target).entries());
     fd.depends_on = [...ev.target.depends_on.selectedOptions].map((x) => x.value).join(", ");
     if (v.id) fd.id = v.id;
-    const f = $("wPhotoIn").files[0];
+    const fs = $("wPhotoIn").files;
     const btn = ev.target.querySelector(".save"); btn.disabled = true; btn.textContent = "Saving…";
     try {
-      if (f) { fd.photo = await shrink(f, 1000, 0.72); fd.photo_thumb = await shrink(f, 140, 0.6); }
+      if (fs.length) fd.photos = await shrinkAll(fs);   // medium pictures (about 1000 px) + small previews
       await call("saveJob", fd); toast("✓ Saved"); closeSheet(); loadWorks();
     } catch (err) { toast(err.message, 1); btn.disabled = false; btn.textContent = "Save"; }
   };
@@ -609,10 +626,15 @@ $("tab-today").addEventListener("click", async (e) => {
     catch (err) { toast(err.message, 1); t.disabled = false; }
   }
 });
+async function shrinkAll(files) {   // several photos at once (28 Sep 2026), 8 per work at most
+  const out = [];
+  for (const f of [...files].slice(0, 8)) out.push({ photo: await shrink(f, 1000, 0.72), thumb: await shrink(f, 140, 0.6) });
+  return out;
+}
 $("wAddPh").onchange = async () => {
-  const f = $("wAddPh").files[0]; if (!f || !wAddFor) return;
-  toast("Uploading photo…");
-  try { await call("addWorkPhoto", wAddFor, await shrink(f, 1000, 0.72), await shrink(f, 140, 0.6), ""); toast("✓ Photo added"); loadWorks(); }
+  const fs = $("wAddPh").files; if (!fs.length || !wAddFor) return;
+  toast("Uploading " + fs.length + " photo" + (fs.length > 1 ? "s" : "") + "…");
+  try { const ps = await shrinkAll(fs); await call("addWorkPhoto", wAddFor, ps.map((p) => p.photo), ps.map((p) => p.thumb), ""); toast("✓ " + ps.length + " photo" + (ps.length > 1 ? "s" : "") + " added"); loadWorks(); }
   catch (err) { toast(err.message, 1); }
 };
 
