@@ -87,6 +87,7 @@ form.f button.save{width:100%;margin-top:16px;padding:14px;border:0;border-radiu
 .card.old{background:#fff7f7;border:1px solid #fecaca}.card.old b.n{text-decoration:line-through;color:#6b7280}
 .repl{background:#fee2e2;color:#991b1b;border-radius:10px;padding:8px 10px;margin-top:8px;font-size:14px;font-weight:600}
 .lvl{font-size:11px;background:#fca311;color:#14213d;border-radius:999px;padding:1px 7px;font-weight:700;margin-left:4px}
+.billbtn{background:#fff7ed!important;border-color:#fdba74!important;color:#9a3412!important}
 .tellink{white-space:nowrap;font-weight:600;color:#1d4ed8;text-decoration:none}
 </style>
 </head>
@@ -178,6 +179,18 @@ const tm = (s) => s ? new Date(String(s).replace(" ", "T") + "+05:30").toLocaleT
 const ago = (s) => { if (!s) return ""; const n = Math.round((Date.now() - new Date(String(s).slice(0, 10) + "T12:00:00+05:30")) / 86400000); return n <= 0 ? "today" : n === 1 ? "yesterday" : n < 60 ? n + " days ago" : Math.round(n / 30) + " months ago"; };
 const digits = (m) => String(m || "").replace(/\D/g, "").slice(-10);
 const telHref = (m) => { const x = String(m || "").replace(/\D/g, ""); return x.length === 10 ? "tel:+91" + x : x.length > 10 && x.startsWith("91") ? "tel:+" + x : "tel:" + x; };
+// 📎 the bill PDF straight from 98blisshome's Gmail (28 Sep 2026: "send the bills attached") - opened, never emailed
+const billBtn = (b, label) => b ? `<button class="billbtn" data-bill='${esc(JSON.stringify({ thread: b.thread, name: b.name }))}'>📎 ${esc(label || "Bill")}</button>` : "";
+async function openBill(b) {
+  const w = window.open("", "_blank");
+  if (w) w.document.write("<p style='font:16px sans-serif;padding:20px'>Opening the bill…</p>");
+  try {
+    const f = await call("billFile", b.thread, b.name);
+    const bytes = Uint8Array.from(atob(f.data), (c) => c.charCodeAt(0));
+    const url = URL.createObjectURL(new Blob([bytes], { type: f.type }));
+    if (w) w.location.href = url; else { const a = document.createElement("a"); a.href = url; a.target = "_blank"; a.download = f.name; a.click(); }
+  } catch (err) { if (w) w.close(); toast(err.message, 1); }
+}
 // any Indian mobile written in a text becomes a tap-to-call link (28 Sep 2026: "direct calling options from the mobile")
 const telLinks = (html) => String(html).replace(/(\+91[\s-]?)?\b([6-9]\d{4})[\s-]?(\d{5})\b/g, (x, a, b, c) => `<a class="tellink" href="tel:+91${b}${c}">📞 ${x}</a>`);
 const acts = (mobile, contact, email) => `<div class="acts">
@@ -213,6 +226,7 @@ async function doAsk(q) {
     const r = await call("ask", q);
     box.innerHTML = `<div class="q">${esc(q)}${r.heading ? " · " + esc(r.heading) : ""}</div>` + r.lines.map((l) => `<p>${telLinks(l)}</p>`).join("") +
       r.people.slice().sort((a, b) => ((a.replaced ? 1 : 0) - (b.replaced ? 1 : 0)) || ((b.current ? 1 : 0) - (a.current ? 1 : 0))).slice(0, 4).map((p) => `<div class="acts" style="margin-top:6px"><b style="flex:2;align-self:center${p.replaced ? ";text-decoration:line-through;color:#991b1b" : ""}">${esc(p.name)}${p.replaced ? " (replaced)" : p.current ? " ⭐ current" : ""}</b>${p.mobile && !p.replaced ? `<a class="call" href="${telHref(p.mobile)}">📞 Call</a>` : ""}<button data-hist="${esc(p.key)}">History</button></div>`).join("") +
+      ((r.bills || []).length ? `<div class="acts">${r.bills.slice(0, 6).map((b) => billBtn(b, b.label.slice(0, 32))).join("")}</div>` : "") +
       (r.links.length ? `<div class="acts">${r.links.slice(0, 6).map((l) => `<a href="${esc(l.url)}" target="_blank">✉️ ${esc(l.label.slice(0, 28))}</a>`).join("")}</div>` : "");
   } catch (e) { box.innerHTML = `<div class="q">${esc(q)}</div><p class="red">${esc(e.message)}</p>`; }
 }
@@ -254,13 +268,14 @@ async function loadWho() {
 
 // ---- one click handler for the whole page
 document.body.addEventListener("click", async (e) => {
-  const t = e.target.closest("[data-hist],[data-form],[data-edit],[data-renew],[data-ask],[data-mail],[data-staff],[data-copy],[data-cact],[data-cf],[data-unrepl],[data-cur],[data-wv],[data-ws],[data-jst],[data-wph],[data-addph],.sheet,.close,#sheet,#docLink,#cRun");
+  const t = e.target.closest("[data-bill],[data-hist],[data-form],[data-edit],[data-renew],[data-ask],[data-mail],[data-staff],[data-copy],[data-cact],[data-cf],[data-unrepl],[data-cur],[data-wv],[data-ws],[data-jst],[data-wph],[data-addph],.sheet,.close,#sheet,#docLink,#cRun");
   if (!t) return;
   if (t.tagName === "A" && !t.href.startsWith("tel:") && !t.href.startsWith("mailto:") && !t.href.includes("wa.me") && t.target !== "_blank") e.preventDefault();
   if (t.id === "sheet" && e.target !== t) return;
   if (t.classList.contains("close") || t.id === "sheet") return closeSheet();
   if (t.classList.contains("sheet")) return window.open(data ? data.sheet_url : "#", "_blank");
   if (t.id === "cRun") { t.textContent = "Checking…"; try { await call("runContactsCheck"); toast("✓ Contacts checked"); loadContacts(); } catch (err) { toast(err.message, 1); } t.textContent = "↻ Check now"; return; }
+  if (t.dataset.bill) return openBill(JSON.parse(t.dataset.bill));
   if (t.dataset.wph) {
     openSheet('<div class="empty">Loading photo…</div>');
     try { const src = await call("workPhoto", t.dataset.job, t.dataset.wph); openSheet(`<img src="${esc(src)}" style="width:100%;border-radius:12px" alt="">`); } catch (err) { openSheet(`<div class="empty">${esc(err.message)}</div>`); }
@@ -520,24 +535,26 @@ async function loadContacts() {
     $("cHead").textContent = "Not checked yet. Tap “Check now” — it reads 98blisshome's Google Contacts. Nothing is deleted or renamed.";
     $("cStats").innerHTML = ""; $("cChips").innerHTML = ""; $("cList").innerHTML = ""; return;
   }
-  $("cHead").innerHTML = `Cut-off <b>${d(s.cutoff)}</b>: contacts from before it are <b>Before</b> until confirmed. A gate visit on the number, or your ✓ Confirm, makes one <b>Organised</b>. Last checked ${dt(s.checked_at)}. Nothing is deleted or renamed.`;
+  $("cHead").innerHTML = `Cut-off <b>${d(s.cutoff)}</b>: contacts from before it are <b>Before</b> until confirmed. A gate visit on the number, or your ✓ Confirm, makes one <b>Organised</b>. <b>🕸 Old</b> = no gate visit, mail or AMC for 2 years: marked on the card and pushed to the bottom of the phone's list (“z-Old ·” before the name) — it comes back by itself on a gate visit or ✓ Confirm. Nothing is deleted. Last checked ${dt(s.checked_at)}.`;
   const e = s.era || {}, st = s.status || {};
   $("cStats").innerHTML = `<div class="stat"><b>${e["Before"] || 0}</b><small>Before ${esc(d(s.cutoff))}</small></div>
     <div class="stat"><b>${e["Organised"] || 0}</b><small>Organised</small></div>
     <div class="stat"><b class="${s.to_check ? "amber" : ""}">${s.to_check}</b><small>to check</small></div>`;
-  const chips = [["check", "To check " + s.to_check], ["before", "Before " + (e["Before"] || 0)], ["new", "New " + (e["New - to check"] || 0)], ["organised", "Organised " + (e["Organised"] || 0)]]
+  const chips = [["check", "To check " + s.to_check], ["current", "Not old " + (s.total - (s.old || 0))], ["old", "🕸 Old " + (s.old || 0)], ["before", "Before " + (e["Before"] || 0)], ["new", "New " + (e["New - to check"] || 0)], ["organised", "Organised " + (e["Organised"] || 0)]]
     .concat(["Active", "Recent", "Dormant", "Never came", "Not tracked", "Not in use"].filter((x) => st[x]).map((x) => [x, x + " " + st[x]])).concat([["all", "All " + s.total]]);
   $("cChips").innerHTML = chips.map(([v, l]) => `<button data-cf="${esc(v)}" class="${v === cFilter ? "on" : ""}">${esc(l)}</button>`).join("");
   $("cList").innerHTML = r.rows.length ? r.rows.map((c) => {
     const m = c.mobile, dial = String(c.dial || "").replace(/[^\d+]/g, "");
     return `<div class="card"><div class="top"><div><b class="n">${esc(c.name || "(no name)")}</b>
       <div class="muted">${esc([c.company, c.phones.join(", "), c.emails].filter(Boolean).join(" · "))}</div></div>
-      <span class="badge ${ERA_BADGE[c.era] || ""}">${esc(c.era === "Before" ? "Before " + d(r.summary.cutoff) : c.era)}</span></div>
+      <span class="badge ${c.old ? "bad" : ERA_BADGE[c.era] || ""}">${c.old ? "🕸 OLD" : esc(c.era === "Before" ? "Before " + d(r.summary.cutoff) : c.era)}</span></div>
+      ${c.old ? `<div class="line muted">Pushed back: “z-Old ·” in front of the name in Google Contacts. ✓ Confirm or a gate visit brings it back.</div>` : ""}
       <div class="line">${c.status && c.status !== "Not tracked" ? stBadge(c.status) : `<span class="muted">${esc(c.status || "Not tracked")} (not a service contact)</span>`}
         ${c.verified_on ? `<span class="muted"> · ✓ ${esc(c.verified_by)} ${d(c.verified_on)}</span>` : ""}</div>
       ${c.issues.map((i) => `<div class="line amber">⚠ ${esc(i)}</div>`).join("")}
       <div class="acts">${m ? `<a class="call" href="tel:+91${m}">📞 Call</a><a class="wa" href="https:\/\/wa.me/91${m}" target="_blank">WhatsApp</a><a href="https:\/\/www.truecaller.com/search/in/${m}" target="_blank">Truecaller</a>` : dial ? `<a class="call" href="tel:${esc(dial)}">📞 Call</a>` : ""}
-        ${c.era !== "Organised" ? `<button data-cact="confirm" data-id="${esc(c.resource)}">✓ Confirm</button>` : ""}
+        ${c.era !== "Organised" || c.old ? `<button data-cact="confirm" data-id="${esc(c.resource)}">✓ Confirm${c.old ? " (bring back)" : ""}</button>` : ""}
+        ${!c.old && c.status !== "Not in use" ? `<button data-cact="old" data-id="${esc(c.resource)}">🕸 Old</button>` : ""}
         ${c.status === "Not in use" ? `<button data-cact="inuse" data-id="${esc(c.resource)}">In use</button>` : `<button data-cact="notinuse" data-id="${esc(c.resource)}">Not in use</button>`}
         <a href="${esc(c.open)}" target="_blank">Open</a></div></div>`;
   }).join("") + (r.total > r.rows.length ? `<div class="empty">Showing ${r.rows.length} of ${r.total} — search to narrow.</div>` : "") : '<div class="empty">Nothing here.</div>';
@@ -571,7 +588,7 @@ async function loadDash() {
       ${a.payment_due ? `<div class="line">Payment due <b class="${payLate ? "red" : ""}">${d(a.payment_due)}</b></div>` : ""}
       <div class="line">👤 ${esc([a.contact_name, a.contact_phone, a.contact_email].filter(Boolean).join(" · ") || "no contact recorded")}</div>
       <div class="acts">${a.contact_phone ? `<a class="call" href="${telHref(a.contact_phone)}">📞 Call</a>` : ""}${a.contact_email ? `<a href="mailto:${esc(a.contact_email)}">✉️ Email</a>` : ""}
-        ${a.mail_link ? `<a href="${esc(a.mail_link)}" target="_blank">Open email</a>` : ""}
+        ${a.mail_link ? `<a href="${esc(a.mail_link)}" target="_blank">Open email</a>` : ""}${billBtn(a.bill, "Bill")}${(a.pay_bills || []).map((b) => billBtn(b, b.label)).join("")}
         ${a.vendor_key ? `<button data-hist="${esc(a.vendor_key)}">History</button>` : ""}
         ${a.kind !== "Warranty" ? `<button data-form="job" data-pre='${esc(JSON.stringify({ amc_id: a.id, vendor_key: a.vendor_key, trade: a.category, job_type: "AMC Visit", status: "Scheduled", subject: a.equipment + " - AMC visit", scheduled_on: a.next_visit_due }))}'>Visit</button>` : ""}
         <button data-form="payment" data-pre='${esc(JSON.stringify({ amc_id: a.id, vendor_key: a.vendor_key }))}'>Pay</button>
@@ -606,7 +623,7 @@ async function loadDash() {
   const unpaid = x.unpaid_jobs.map((j) => [desk("job", j.id, j.subject), esc(j.vendor_name || ""), `<span class="red">${inr(j.balance)}</span>`])
     .concat(x.amc.filter((a) => a.amount && a.balance > 0).map((a) => [desk("amc", a.id, "AMC: " + a.equipment), esc(a.vendor_name || ""), `<span class="red">${inr(a.balance)}</span>`]));
   $("unpaidList").innerHTML = unpaid.length ? `<table><tr><th>For</th><th>Vendor</th><th>Due</th></tr>${unpaid.map((r) => `<tr>${r.map((c) => `<td>${c}</td>`).join("")}</tr>`).join("")}</table>` : '<div class="empty">Nothing unpaid.</div>';
-  $("payList").innerHTML = x.payments.length ? `<table><tr><th>Date</th><th>Vendor</th><th>Amount</th><th>Mode</th></tr>${x.payments.map((p) => `<tr><td>${d(p.date)}</td><td>${p.vendor_key ? `<a href="#" data-hist="${esc(p.vendor_key)}">${esc(p.vendor_name || "")}</a>` : ""}</td><td>${inr(p.amount)}</td><td>${esc(p.mode)}</td></tr>`).join("")}</table>` : '<div class="empty">No payments recorded.</div>';
+  $("payList").innerHTML = x.payments.length ? `<table><tr><th>Date</th><th>Vendor</th><th>Amount</th><th>Mode</th></tr>${x.payments.map((p) => `<tr><td>${d(p.date)}</td><td>${p.vendor_key ? `<a href="#" data-hist="${esc(p.vendor_key)}">${esc(p.vendor_name || "")}</a>` : esc(p.notes ? p.notes.split(" — ")[0].slice(0, 30) : "")}</td><td>${inr(p.amount)}</td><td>${esc(p.mode)}${p.bill ? " " + billBtn(p.bill, "Bill") : ""}</td></tr>`).join("")}</table>` : '<div class="empty">No payments recorded.</div>';
 
   if (BOOT.role === "owner") {
     $("staffList").innerHTML = `<div class="card"><b class="n">You</b> <span class="lvl">Owner</span><div class="line muted">Everything, including this Staff tab</div></div>` +
