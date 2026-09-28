@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="98 Bliss"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0f172a"><link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png"><link rel="icon" href="icon-192.png">
+<title>98 Bliss — Home services</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#14213d">
+<base target="_top">
+<script>window.onerror = function (m, s, l, c) { try { var d = document.createElement("div"); d.style.cssText = "position:fixed;left:0;right:0;bottom:0;z-index:99;background:#b00020;color:#fff;padding:10px;font:13px monospace"; var sc = [].slice.call(document.scripts).sort(function (a, b) { return b.text.length - a.text.length; })[0]; var ln = sc ? sc.text.split("\n") : []; d.textContent = "Page error: " + m + " (line " + l + ":" + c + ") >> " + (ln[l - 2] || "").slice(0, 140) + " || " + (ln[l - 1] || "").slice(Math.max(0, c - 60), c + 20); (document.body || document.documentElement).appendChild(d); } catch (e) {} };</script>
+<script src="config.js"></script><script src="app.js"></script>
+<style>
+:root{--ink:#14213d;--bg:#f4f5f7;--card:#fff;--muted:#6b7280;--line:#e5e7eb;--ok:#1a7f37;--warn:#b35c00;--bad:#b00020;--acc:#1d4ed8}
+*{box-sizing:border-box}
+body{margin:0;font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink)}
+a{color:var(--acc)}
+header{position:sticky;top:0;z-index:5;background:var(--ink);color:#fff;padding:12px 16px 0}
+header h1{margin:0 0 8px;font-size:18px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+header h1 small{font-weight:400;font-size:12px;opacity:.85}
+header h1 small a{color:#fff}
+nav{display:flex;overflow-x:auto;gap:2px;scrollbar-width:none}
+nav button{flex:none;background:transparent;border:0;color:#cbd5e1;padding:9px 12px 11px;font-size:14px;border-bottom:3px solid transparent;white-space:nowrap}
+nav button.on{color:#fff;border-bottom-color:#fca311;font-weight:600}
+main{padding:14px 16px 40px;max-width:760px;margin:0 auto}
+input,select{width:100%;padding:11px 12px;border:1px solid #cbd5e1;border-radius:10px;font-size:16px;background:#fff}
+.chips{display:flex;gap:6px;overflow-x:auto;padding:10px 0 4px;scrollbar-width:none}
+.chips button{flex:none;border:1px solid #cbd5e1;background:#fff;border-radius:999px;padding:6px 12px;font-size:13px;color:var(--ink)}
+.chips button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.wgrp{background:var(--card);border-radius:14px;padding:10px 12px;margin:12px 0;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.wgrp h4{margin:2px 0 6px;font-size:16px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.wrow{border-top:1px solid #eef2f7;padding:8px 0}.wrow:first-of-type{border-top:0}
+.wrow .w1{display:flex;gap:6px;align-items:baseline;flex-wrap:wrap}.wrow .pl{color:var(--muted);font-size:13px}
+.pri{font-size:10.5px;font-weight:700;padding:1px 6px;border-radius:999px}.pri.Urgent{background:#fee2e2;color:#991b1b}.pri.High{background:#fef3c7;color:#92400e}.pri.Low{background:#e5e7eb;color:#374151}
+.wait{font-size:12.5px;color:#92400e;margin-top:3px}.wrow .acts{margin-top:6px}
+.card{background:var(--card);border-radius:14px;padding:12px 14px;margin:10px 0;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.card .top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.card b.n{font-size:16px}
+.card small,.muted{color:var(--muted)}
+.card .line{margin-top:4px;font-size:14px}
+.acts{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.acts a,.acts button{flex:1;min-width:84px;text-align:center;padding:9px 6px;border-radius:10px;font-size:14px;font-weight:600;text-decoration:none;border:1px solid var(--line);background:#fff;color:var(--ink)}
+.acts a.call{background:var(--ok);color:#fff;border-color:var(--ok)}
+.acts a.wa{background:#25d366;color:#fff;border-color:#25d366}
+.badge{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;background:#e5e7eb;color:#374151;white-space:nowrap}
+.badge.Good{background:#dcfce7;color:#166534}.badge.OK{background:#e0e7ff;color:#3730a3}
+.badge.bad,.badge.Expired{background:#fee2e2;color:#991b1b}
+.badge.in,.badge.Active{background:#dcfce7;color:#166534}
+.badge.Renewal{background:#fef3c7;color:#92400e}
+h2{font-size:15px;margin:22px 0 4px;color:#334155;text-transform:uppercase;letter-spacing:.4px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px}
+.stat{background:var(--card);border-radius:12px;padding:10px;text-align:center;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.stat b{display:block;font-size:19px}
+.stat small{color:var(--muted);font-size:12px}
+.add{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:14px}
+.add a{background:#fff;border:1px dashed #94a3b8;border-radius:12px;padding:12px;text-align:center;text-decoration:none;color:var(--ink);font-weight:600}
+.empty{color:var(--muted);text-align:center;padding:26px 0}
+.red{color:var(--bad);font-weight:700}.amber{color:var(--warn);font-weight:700}
+.hide{display:none!important}
+#sheet{position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:20;display:none;align-items:flex-end;justify-content:center}
+#sheet.open{display:flex}
+#sheet .box{background:var(--bg);width:100%;max-width:760px;max-height:92vh;overflow:auto;border-radius:18px 18px 0 0;padding:16px 16px 30px}
+#sheet .close{float:right;border:0;background:#e5e7eb;border-radius:999px;width:34px;height:34px;font-size:18px}
+table{width:100%;border-collapse:collapse;font-size:13px;background:#fff;border-radius:10px;overflow:hidden}
+td,th{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{background:#f8fafc;font-size:12px;color:#475569}
+form.f label{display:block;font-size:13px;color:var(--muted);margin:10px 0 4px}
+form.f textarea{width:100%;padding:10px 12px;border:1px solid #cbd5e1;border-radius:10px;font-size:15px;min-height:60px}
+form.f .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+form.f button.save{width:100%;margin-top:16px;padding:14px;border:0;border-radius:12px;background:var(--ok);color:#fff;font-size:17px;font-weight:700}
+#toast{position:fixed;left:50%;top:70px;transform:translateX(-50%);background:var(--ok);color:#fff;padding:12px 18px;border-radius:12px;font-weight:600;z-index:30;display:none;max-width:90%}
+#toast.err{background:var(--bad)}
+.acts button.small{flex:0 0 auto;min-width:0;padding:7px 10px;font-size:13px}
+.ask{display:flex;gap:8px}.ask input{flex:1}.ask button{border:0;border-radius:10px;background:var(--acc);color:#fff;font-weight:700;padding:0 16px;font-size:16px}
+.ans{background:#eef2ff;border:1px solid #c7d2fe;border-radius:14px;padding:12px;margin-top:12px}
+.ans .q{color:var(--muted);font-size:12px;margin-bottom:6px}.ans p{margin:6px 0}
+.sugg{margin-top:12px;display:flex;flex-wrap:wrap;gap:6px}.sugg button{border:1px dashed #94a3b8;background:#fff;border-radius:999px;padding:6px 11px;font-size:13px;color:var(--ink)}
+.vt{margin-top:8px}.vt td{padding:4px 6px;font-size:12.5px}
+.badge.Recent{background:#fef3c7;color:#92400e}.badge.Dormant,.badge.Never{background:#e5e7eb;color:#374151}
+.badge.Warranty{background:#e0e7ff;color:#3730a3}
+.card.old{background:#fff7f7;border:1px solid #fecaca}.card.old b.n{text-decoration:line-through;color:#6b7280}
+.repl{background:#fee2e2;color:#991b1b;border-radius:10px;padding:8px 10px;margin-top:8px;font-size:14px;font-weight:600}
+.lvl{font-size:11px;background:#fca311;color:#14213d;border-radius:999px;padding:1px 7px;font-weight:700;margin-left:4px}
+</style>
+</head>
+<body>
+<header>
+  <h1><span id="house"></span> <small><span id="me"></span> · <a id="gateLink" href="#">Gate</a> · <a id="sheetLink" href="#">Sheet</a></small></h1>
+  <nav>
+    <button data-tab="ask" class="on">Ask</button>
+    <button data-tab="who">Who to call</button>
+    <button data-tab="now">Now</button>
+    <button data-tab="amc">AMC</button>
+    <button data-tab="mail">Mail <span id="nMail"></span></button>
+    <button data-tab="jobs">Works</button>
+    <button data-tab="money">Money</button>
+    <button data-tab="contacts" id="contactsTab" class="hide">Contacts</button>
+    <button data-tab="staff" id="staffTab" class="hide">Staff</button>
+  </nav>
+</header>
+
+<main id="tab-ask">
+  <form class="ask" id="askForm"><input id="askQ" type="search" placeholder="Ask anything… e.g. which plumber came recently?" autocomplete="off"><button type="submit">Ask</button></form>
+  <div class="sugg" id="sugg"></div>
+  <div id="answers"></div>
+</main>
+
+<main id="tab-who" class="hide">
+  <input id="q" type="search" placeholder="Search: plumber, electrician, gate, a name, shop, number…" autocomplete="off">
+  <div class="chips" id="status"></div>
+  <div class="chips" id="trades"><button class="on" data-t="">All</button></div>
+  <div id="whoList"></div>
+  <div class="add">
+    <a href="#" data-form="person">+ Add a person</a>
+    <a href="#" data-form="job">+ New job</a>
+  </div>
+</main>
+
+<main id="tab-now" class="hide">
+  <h2>Inside right now</h2><div id="insideList"></div>
+  <h2>Service people — last <select id="days" style="width:auto;display:inline-block;padding:2px 6px;font-size:14px"><option>30</option><option>90</option><option>180</option><option>365</option></select> days</h2>
+  <div id="recentList"></div>
+</main>
+
+<main id="tab-amc" class="hide"><div id="amcList"></div><div class="add"><a href="#" data-form="amc">+ Add AMC / warranty</a><a href="#" class="sheet">All AMCs (sheet)</a></div></main>
+<main id="tab-mail" class="hide"><div class="muted" style="margin:4px 0 8px">Found in 98blisshome's Gmail: AMC, warranty, service and bill emails. Checked every hour.</div><div id="mailList"></div></main>
+<main id="tab-staff" class="hide">
+  <h2>Who can open what</h2><div id="staffList"></div>
+  <div class="add"><a href="#" data-form="staff">+ Add staff link</a><a href="#" id="docLink">Service record (Doc)</a></div>
+</main>
+<main id="tab-contacts" class="hide">
+  <div class="muted" id="cHead" style="margin:4px 0 8px"></div>
+  <div class="stats" id="cStats"></div>
+  <input id="cq" type="search" placeholder="Search a name, number, company…" autocomplete="off" style="margin-top:10px">
+  <div class="chips" id="cChips"></div>
+  <div id="cList"></div>
+  <div class="add"><a href="#" id="cRun">↻ Check now</a><a href="#" class="sheet">Register (sheet)</a></div>
+</main>
+<main id="tab-jobs" class="hide">
+  <div class="add" style="margin-top:4px"><a href="#" data-form="job">+ New work</a><a href="#" class="sheet">All works (sheet)</a></div>
+  <input id="wq" placeholder="Search works: place, person, problem…" autocomplete="off" style="margin-top:8px">
+  <div class="chips" id="wview"><button data-wv="person" class="on">By person</button><button data-wv="place">By place</button><button data-wv="all">All</button></div>
+  <div class="chips" id="wstat"><button data-ws="pending" class="on">Pending</button><button data-ws="blocked">Waiting on other work</button><button data-ws="done">Done (all time)</button></div>
+  <div id="wStats" class="muted"></div>
+  <div id="jobList"></div>
+</main>
+<main id="tab-money" class="hide">
+  <div class="stats" id="moneyStats"></div>
+  <h2>Unpaid</h2><div id="unpaidList"></div>
+  <h2>Last 90 days</h2><div id="payList"></div>
+  <div class="add"><a href="#" data-form="payment">+ Record payment</a><a href="#" class="sheet">All payments (sheet)</a></div>
+</main>
+
+<div id="sheet"><div class="box" id="sheetBox"></div></div>
+<div id="toast"></div>
+
+<script type="text/plain" id="main">
+(() => {
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function call(fn, ...args) { return window.appCall(fn, args); }
+function toast(msg, bad) {
+  const t = $("toast"); t.textContent = msg; t.className = bad ? "err" : ""; t.style.display = "block";
+  clearTimeout(toast.t); toast.t = setTimeout(() => (t.style.display = "none"), bad ? 5000 : 2500);
+}
+const inr = (v) => "₹" + Number(v || 0).toLocaleString("en-IN", { maximumFractionDigits: 0 });
+const d = (s) => s ? new Date(String(s).slice(0, 10) + "T00:00:00+05:30").toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "";
+const dt = (s) => s ? new Date(String(s).replace(" ", "T") + "+05:30").toLocaleString("en-IN", { day: "2-digit", month: "short", year: "2-digit", hour: "2-digit", minute: "2-digit" }) : "";
+const tm = (s) => s ? new Date(String(s).replace(" ", "T") + "+05:30").toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }) : "";
+const ago = (s) => { if (!s) return ""; const n = Math.round((Date.now() - new Date(String(s).slice(0, 10) + "T12:00:00+05:30")) / 86400000); return n <= 0 ? "today" : n === 1 ? "yesterday" : n < 60 ? n + " days ago" : Math.round(n / 30) + " months ago"; };
+const digits = (m) => String(m || "").replace(/\D/g, "").slice(-10);
+const telHref = (m) => { const x = String(m || "").replace(/\D/g, ""); return x.length === 10 ? "tel:+91" + x : x.length > 10 && x.startsWith("91") ? "tel:+" + x : "tel:" + x; };
+const acts = (mobile, contact, email) => `<div class="acts">
+  ${mobile ? `<a class="call" href="${telHref(mobile)}">📞 Call</a>${digits(mobile).length === 10 ? `<a class="wa" href="https:\/\/wa.me/91${digits(mobile)}">WhatsApp</a>` : ""}` : ""}
+  ${email ? `<a href="mailto:${esc(email)}">✉️ Email</a>` : ""}
+  ${contact ? `<button data-hist="${esc(contact)}">History</button>` : ""}</div>`;
+const desk = (dtp, n, label) => `<a href="#" data-edit="${dtp}" data-id="${esc(n)}">${esc(label || n)}</a>`;
+const stBadge = (st) => st ? `<span class="badge ${esc(String(st).split(" ")[0])}">${{ Active: "🟢", Recent: "🟡", Dormant: "⚪", "Never came": "⚪" }[st] || ""} ${esc(st)}</span>` : "";
+const when = (v) => `${d(v.check_in)} · ${tm(v.check_in)}${v.in_approx ? "~" : ""}${v.check_out ? "–" + tm(v.check_out) + (v.out_approx ? "~" : "") : " (inside)"}`;
+let data = null;
+
+// tabs
+const TABS = ["ask", "who", "now", "amc", "mail", "jobs", "money", "contacts", "staff"];
+document.querySelectorAll("nav button").forEach((b) => b.onclick = () => showTab(b.dataset.tab));
+function showTab(t) {
+  document.querySelectorAll("nav button").forEach((x) => x.classList.toggle("on", x.dataset.tab === t));
+  TABS.forEach((x) => $("tab-" + x).classList.toggle("hide", x !== t));
+  if (t === "who") loadWho();
+  if (t === "contacts") loadContacts();
+  if (t === "jobs") loadWorks();
+}
+
+// ---- ask
+const SUGG = ["Which plumber attended recently?", "Who repaired the gate recently?", "When is the next Lift AMC due?", "Who is inside now?", "What was paid for the AC AMC?", "Unpaid bills"];
+$("sugg").innerHTML = SUGG.map((q) => `<button type="button" data-ask="${esc(q)}">${esc(q)}</button>`).join("");
+$("askForm").onsubmit = (e) => { e.preventDefault(); doAsk($("askQ").value); };
+async function doAsk(q) {
+  q = String(q || "").trim(); if (!q) return;
+  $("askQ").value = q;
+  const box = document.createElement("div"); box.className = "ans"; box.innerHTML = `<div class="q">${esc(q)}</div><div class="muted">Looking…</div>`;
+  $("answers").prepend(box);
+  try {
+    const r = await call("ask", q);
+    box.innerHTML = `<div class="q">${esc(q)}${r.heading ? " · " + esc(r.heading) : ""}</div>` + r.lines.map((l) => `<p>${l}</p>`).join("") +
+      r.people.slice().sort((a, b) => ((a.replaced ? 1 : 0) - (b.replaced ? 1 : 0)) || ((b.current ? 1 : 0) - (a.current ? 1 : 0))).slice(0, 4).map((p) => `<div class="acts" style="margin-top:6px"><b style="flex:2;align-self:center${p.replaced ? ";text-decoration:line-through;color:#991b1b" : ""}">${esc(p.name)}${p.replaced ? " (replaced)" : p.current ? " ⭐ current" : ""}</b>${p.mobile && !p.replaced ? `<a class="call" href="${telHref(p.mobile)}">📞 Call</a>` : ""}<button data-hist="${esc(p.key)}">History</button></div>`).join("") +
+      (r.links.length ? `<div class="acts">${r.links.slice(0, 3).map((l) => `<a href="${esc(l.url)}" target="_blank">✉️ ${esc(l.label.slice(0, 28))}</a>`).join("")}</div>` : "");
+  } catch (e) { box.innerHTML = `<div class="q">${esc(q)}</div><p class="red">${esc(e.message)}</p>`; }
+}
+
+// ---- who to call / search
+let trade = "", status = "", timer, whoSeq = 0;
+$("trades").onclick = (e) => {
+  if (e.target.tagName !== "BUTTON") return;
+  trade = e.target.dataset.t;
+  [...$("trades").children].forEach((b) => b.classList.toggle("on", b === e.target));
+  loadWho();
+};
+$("status").onclick = (e) => { const b = e.target.closest("button"); if (!b) return; status = b.dataset.s; loadWho(); };
+$("q").oninput = () => { clearTimeout(timer); timer = setTimeout(loadWho, 300); };
+async function loadWho() {
+  const mine = ++whoSeq; // a slower, older answer must never overwrite the newer list
+  const r = await call("whoToCall", trade, $("q").value.trim(), status);
+  if (mine !== whoSeq) return;
+  const total = Object.values(r.counts).reduce((a, b) => a + b, 0);
+  $("status").innerHTML = [["", "All " + total]].concat(["Active", "Recent", "Dormant", "Never came"].filter((x) => r.counts[x]).map((x) => [x, x + " " + r.counts[x]]))
+    .map(([v, l]) => `<button data-s="${esc(v)}" class="${v === status ? "on" : ""}">${esc(l)}</button>`).join("");
+  $("whoList").innerHTML = r.rows.length ? r.rows.map((x) => {
+    const bad = x.rating === "Do not call again";
+    const rp = x.replaced;
+    return `<div class="card ${rp ? "old" : ""}">
+      ${rp ? `<div class="repl">⛔ Replaced ${d(rp.on)}${rp.by_name ? ` by <b>${esc(rp.by_name)}</b> · ${esc(rp.by_mobile)} — call them instead` : " — no longer used"}${rp.note ? `<div style="font-weight:400">${esc(rp.note)}</div>` : ""}</div>` : ""}
+      <div class="top"><div><b class="n">${esc(x.person_name || "(no name)")}</b>
+        <div class="muted">${esc([x.trades, x.company_name].filter(Boolean).join(" · "))}${x.source === "contacts" ? " · from your contacts" : ""}</div>
+        <div class="line"><b>${esc(x.mobile)}</b>${x.email ? " · " + esc(x.email) : ""}</div></div>
+        <div style="text-align:right">${x.current ? '<span class="badge in">⭐ CURRENT</span> ' : ""}${x.inside ? '<span class="badge in">INSIDE NOW</span> ' : ""}${rp ? '<span class="badge bad">REPLACED</span>' : stBadge(x.status)}${x.rating ? ` <span class="badge ${bad ? "bad" : esc(x.rating)}">${esc(x.rating)}</span>` : ""}</div></div>
+      ${x.recent_visits.length ? `<table class="vt">${x.recent_visits.map((v) => `<tr><td>${esc(when(v))}</td><td>${esc(v.work || "")}</td></tr>`).join("")}</table>` : `<div class="line muted">No gate visit recorded yet${x.last_mail ? " · last email " + d(x.last_mail) : ""}</div>`}
+      ${x.visits > 5 ? `<div class="line muted">${x.visits} visits in all</div>` : ""}
+      ${x.notes ? `<div class="line">📝 ${esc(x.notes)}</div>` : ""}
+      ${rp && rp.by_mobile ? `<div class="acts"><a class="call" href="${telHref(rp.by_mobile)}">📞 Call ${esc(rp.by_name)}</a><button data-hist="${esc(rp.by_key)}">Their history</button></div>` : ""}
+      ${acts(rp ? "" : x.mobile, x.key, rp ? "" : x.email)}
+      <div class="acts">${rp ? "" : `<button data-cur="${esc(x.key)}" data-on="${x.current ? "" : "1"}">${x.current ? "Remove ⭐ current" : "⭐ Make current"}</button>`}${rp ? `<button data-unrepl="${esc(x.key)}">Undo replaced</button>` : `<button data-form="replace" data-pre='${esc(JSON.stringify({ key: x.key, name: x.person_name, trades: x.trades }))}'>Replaced…</button>`}</div></div>`;
+  }).join("") : `<div class="empty">Nobody found${trade ? " for " + esc(trade) : ""}. As service people check in at the gate they appear here automatically.</div>`;
+}
+
+// ---- one click handler for the whole page
+document.body.addEventListener("click", async (e) => {
+  const t = e.target.closest("[data-hist],[data-form],[data-edit],[data-renew],[data-ask],[data-mail],[data-staff],[data-copy],[data-cact],[data-cf],[data-unrepl],[data-cur],[data-wv],[data-ws],[data-jst],.sheet,.close,#sheet,#docLink,#cRun");
+  if (!t) return;
+  if (t.tagName === "A" && !t.href.startsWith("tel:") && !t.href.startsWith("mailto:") && !t.href.includes("wa.me") && t.target !== "_blank") e.preventDefault();
+  if (t.id === "sheet" && e.target !== t) return;
+  if (t.classList.contains("close") || t.id === "sheet") return closeSheet();
+  if (t.classList.contains("sheet")) return window.open(data ? data.sheet_url : "#", "_blank");
+  if (t.id === "cRun") { t.textContent = "Checking…"; try { await call("runContactsCheck"); toast("✓ Contacts checked"); loadContacts(); } catch (err) { toast(err.message, 1); } t.textContent = "↻ Check now"; return; }
+  if (t.dataset.wv) { wView = t.dataset.wv; return renderWorks(); }
+  if (t.dataset.ws) { wStat = t.dataset.ws; return renderWorks(); }
+  if (t.dataset.jst) {
+    try { await call("setJobStatus", t.dataset.id, t.dataset.jst, ""); toast(t.dataset.jst === "Done" ? "✓ Marked done" : "✓ " + t.dataset.jst); loadWorks(); loadDash(); } catch (err) { toast(err.message, 1); }
+    return;
+  }
+  if (t.dataset.cur) { try { await call("setCurrent", t.dataset.cur, !!t.dataset.on); toast(t.dataset.on ? "⭐ Marked current — everyone sees it" : "✓ No longer current"); loadWho(); } catch (err) { toast(err.message, 1); } return; }
+  if (t.dataset.unrepl) { try { await call("unreplacePerson", t.dataset.unrepl); toast("✓ Back in use"); loadWho(); } catch (err) { toast(err.message, 1); } return; }
+  if (t.dataset.cf !== undefined) { cFilter = t.dataset.cf; return loadContacts(); }
+  if (t.dataset.cact) {
+    try { await call("contactAction", t.dataset.id, t.dataset.cact); toast(t.dataset.cact === "confirm" ? "✓ Confirmed — now Organised" : "✓ Updated"); loadContacts(); } catch (err) { toast(err.message, 1); }
+    return;
+  }
+  if (t.id === "docLink") { try { const u = await call("refreshSummary"); if (u) window.open(u, "_blank"); else toast("Service record is off in Settings", 1); } catch (err) { toast(err.message, 1); } return; }
+  if (t.dataset.ask) { showTab("ask"); return doAsk(t.dataset.ask); }
+  if (t.dataset.hist) return openHistory(t.dataset.hist);
+  if (t.dataset.copy) { try { await navigator.clipboard.writeText(t.dataset.copy); toast("✓ Link copied"); } catch (err) { prompt("Copy this link", t.dataset.copy); } return; }
+  if (t.dataset.renew) {
+    if (!confirmBox("Create next year's contract from this one?")) return;
+    try { await call("renewAmc", t.dataset.renew); toast("✓ Renewed for 1 year"); loadDash(); } catch (err) { toast(err.message, 1); }
+    return;
+  }
+  if (t.dataset.mail) {
+    try { await call("mailAction", t.dataset.id, t.dataset.mail); toast(t.dataset.mail === "ignore" ? "Ignored" : "✓ Done"); loadDash(); } catch (err) { toast(err.message, 1); }
+    return;
+  }
+  if (t.dataset.staff) {
+    try {
+      if (t.dataset.staff === "reset") { if (!confirmBox("Make a new shared Security link? The old one stops working.")) return; await call("resetSharedGuardLink"); }
+      else await call("setStaffActive", t.dataset.id, t.dataset.staff === "on");
+      toast("✓ Updated"); loadDash();
+    } catch (err) { toast(err.message, 1); }
+    return;
+  }
+  if (t.dataset.form) return openForm(t.dataset.form, JSON.parse(t.dataset.pre || "{}"));
+  if (t.dataset.edit) return openEdit(t.dataset.edit, t.dataset.id);
+});
+function confirmBox(q) { return window.confirm(q); }
+function closeSheet() { $("sheet").classList.remove("open"); }
+function openSheet(html) { $("sheetBox").innerHTML = '<button class="close">×</button>' + html; $("sheet").classList.add("open"); }
+
+// ---- history
+async function openHistory(key) {
+  openSheet('<div class="empty">Loading…</div>');
+  const h = await call("history", key);
+  const c = h.person;
+  const tbl = (head, rows) => rows.length ? `<table><tr>${head.map((x) => `<th>${x}</th>`).join("")}</tr>${rows.map((r) => `<tr>${r.map((x) => `<td>${x ?? ""}</td>`).join("")}</tr>`).join("")}</table>` : '<div class="muted">None.</div>';
+  openSheet(`<h3 style="margin:4px 0">${esc(c.name)}</h3>
+    <div class="muted">${esc([c.trades, c.company, c.mobile, c.email].filter(Boolean).join(" · "))}</div>
+    <div class="line">${stBadge(c.status)} ${c.rating ? `<span class="badge ${c.rating === "Do not call again" ? "bad" : esc(c.rating)}">${esc(c.rating)}</span>` : ""}</div>
+    ${c.notes ? `<div class="line">📝 ${esc(c.notes)}</div>` : ""}
+    ${c.replaced ? `<div class="repl">⛔ Replaced ${d(c.replaced.on)}${c.replaced.by_name ? ` by <b>${esc(c.replaced.by_name)}</b> · ${esc(c.replaced.by_mobile)}` : ""}${c.replaced.note ? " — " + esc(c.replaced.note) : ""}</div>` : ""}
+    <div class="line">${h.first_seen ? `First seen ${d(h.first_seen)} · last seen <b>${d(h.last_seen)}</b> · ` : ""}${h.visits.length} visit${h.visits.length == 1 ? "" : "s"} · ${h.jobs.length} work${h.jobs.length == 1 ? "" : "s"} (${h.jobs.filter((j) => ["Open", "Scheduled", "In Progress"].includes(j.status)).length} pending) · paid <b>${inr(h.total_paid)}</b></div>
+    ${acts(c.mobile, null, c.email)}
+    <div class="acts"><a href="#" data-form="person" data-pre='${esc(JSON.stringify(c))}'>Edit / rate</a><a href="#" data-form="job" data-pre='${esc(JSON.stringify({ vendor_key: c.key }))}'>+ New work</a><a href="#" data-form="payment" data-pre='${esc(JSON.stringify({ vendor_key: c.key }))}'>Payment</a></div>
+    <h2>Visits</h2>${tbl(["In", "Out", "Work done / purpose", "Entered by"], h.visits.map((v) => [dt(v.check_in) + (v.in_approx ? "~" : ""), v.check_out ? dt(v.check_out) + (v.out_approx ? "~" : "") : "inside", esc(v.work_done || v.meeting || ""), esc(v.registered_by || "")]))}
+    <h2>Works (all time, newest first)</h2>${tbl(["Date", "Place", "Work", "Status", "Billed", "Due"], h.jobs.slice().sort((a, b) => String(b.completed_on || b.reported_on).localeCompare(String(a.completed_on || a.reported_on))).map((j) => [d(j.completed_on || j.reported_on), esc(j.place || ""), desk("job", j.id, j.subject) + (j.work_done ? `<div class="muted" style="font-size:12px">${esc(String(j.work_done).split("\n").pop())}</div>` : ""), esc(j.status), inr(j.billed), j.balance ? `<span class="red">${inr(j.balance)}</span>` : "—"]))}
+    <h2>AMC / warranty</h2>${tbl(["What", "Period", "Status", "Amount"], h.amcs.map((a) => [desk("amc", a.id, a.equipment), (a.start_date ? d(a.start_date) + " – " : "to ") + d(a.end_date), esc(a.status), a.amount ? inr(a.amount) : ""]))}
+    <h2>Payments</h2>${tbl(["Date", "Amount", "Mode", "Ref"], h.payments.map((p) => [d(p.date), inr(p.amount), esc(p.mode), esc(p.reference || "")]))}
+    <h2>Emails</h2>${tbl(["Date", "Subject", "Due"], (h.mails || []).map((m) => [d(m.received), `<a href="${esc(m.link)}" target="_blank">${esc(m.subject)}</a>`, d(m.due)]))}`);
+}
+
+// ---- forms (people, jobs, AMC, payments, staff) - saved straight into the Google Sheet
+const RATINGS = ["", "Good", "OK", "Do not call again"];
+const vendorOpts = (sel) => '<option value="">— choose —</option>' + (data ? data.vendors : []).map((v) => `<option value="${esc(v.key)}" ${v.key === sel ? "selected" : ""}>${esc(v.name)}${v.trades ? " — " + esc(v.trades) : ""}</option>`).join("");
+const opts = (list, sel) => list.map((x) => `<option ${String(x) === String(sel || "") ? "selected" : ""}>${esc(x)}</option>`).join("");
+const today = () => (data && data.today) || new Date().toISOString().slice(0, 10);
+const F = {
+  person: (v) => ({ title: v.key ? "Edit person" : "Add a person", fn: v.mail_id ? "mailToPerson" : "savePerson", html: `
+    <input type="hidden" name="mail_id" value="${esc(v.mail_id || "")}">
+    <label>Mobile</label><input name="mobile" type="tel" value="${esc(v.mobile || "")}" ${v.key ? "readonly" : ""} required>
+    <label>Name</label><input name="name" value="${esc(v.name || "")}" required>
+    <label>Company / shop</label><input name="company" value="${esc(v.company || "")}">
+    <label>Email</label><input name="email" type="email" value="${esc(v.email || "")}">
+    <label>Trade(s) — e.g. Plumbing, Electrical</label><input name="trades" value="${esc(v.trades || "")}" list="tradeList">
+    <div class="row"><div><label>Type</label><select name="category">${opts(["Maintenance", "Visitor", "Household Staff", "Family", "Delivery"], v.category || "Maintenance")}</select></div>
+    <div><label>My rating</label><select name="rating">${opts(RATINGS, v.rating)}</select></div></div>
+    <label>Who is this / remarks</label><textarea name="notes">${esc(v.notes || "")}</textarea>` }),
+  job: (v) => ({ title: v.id ? "Edit work" : "New work", fn: "saveJob", html: `
+    <input type="hidden" name="id" value="${esc(v.id || "")}">
+    <label>Where (place / room)</label><input name="place" value="${esc(v.place || "")}" list="wPlaces" placeholder="e.g. Manju bathroom, Mother room, Terrace" autocomplete="off">
+    <datalist id="wPlaces">${(W ? W.places : []).map((p) => `<option>${esc(p)}</option>`).join("")}</datalist>
+    <label>What is the work?</label><input name="subject" value="${esc(v.subject || "")}" placeholder="e.g. Health faucet leaking" required>
+    <label>Who does it</label><select name="vendor_key">${vendorOpts(v.vendor_key)}</select>
+    <div class="row"><div><label>Priority</label><select name="priority">${opts(["Urgent", "High", "Normal", "Low"], v.priority || "Normal")}</select></div>
+    <div><label>Status</label><select name="status">${opts(["Open", "Scheduled", "In Progress", "Done", "Cancelled"], v.status || "Open")}</select></div></div>
+    <label>Waits for (do these first)</label><select name="depends_on" multiple size="4">${(W ? W.jobs : []).filter((j) => j.id !== v.id && ["Open", "Scheduled", "In Progress"].includes(j.status)).map((j) => `<option value="${esc(j.id)}" ${(v.depends_on || []).includes(j.id) ? "selected" : ""}>${esc([j.place, j.subject].filter(Boolean).join(" — "))}${j.vendor_name ? " (" + esc(j.vendor_name) + ")" : ""}</option>`).join("")}</select>
+    <div class="muted" style="font-size:12px">Hold ⌘/Ctrl (or tap several on a phone) to pick more than one. Leave empty if it can start now.</div>
+    <div class="row"><div><label>Trade</label><select name="trade"><option value=""></option>${opts(BOOT.trades, v.trade)}</select></div>
+    <div><label>Type</label><select name="job_type">${opts(["Breakdown", "AMC Visit", "Installation", "Inspection", "Other"], v.job_type)}</select></div></div>
+    <label>Under AMC</label><select name="amc_id"><option value=""></option>${(data ? data.amc : []).map((a) => `<option value="${esc(a.id)}" ${a.id === v.amc_id ? "selected" : ""}>${esc(a.equipment)}</option>`).join("")}</select>
+    <label>Scheduled on</label><input type="date" name="scheduled_on" value="${esc(v.scheduled_on || "")}">
+    <div class="row"><div><label>Quoted ₹</label><input name="quoted" inputmode="decimal" value="${esc(v.quoted || "")}"></div>
+    <div><label>Billed ₹</label><input name="billed" inputmode="decimal" value="${esc(v.billed || "")}"></div></div>
+    <label>Problem / request</label><textarea name="description">${esc(v.description || "")}</textarea>
+    <label>Work done</label><textarea name="work_done">${esc(v.work_done || "")}</textarea>` }),
+  amc: (v) => ({ title: v.id ? "Edit AMC / warranty" : "Add AMC / warranty", fn: "saveAmc", html: `
+    <input type="hidden" name="id" value="${esc(v.id || "")}"><input type="hidden" name="mail_id" value="${esc(v.mail_id || "")}"><input type="hidden" name="mail_link" value="${esc(v.mail_link || "")}">
+    <div class="row"><div><label>Kind</label><select name="kind">${opts(["AMC", "Warranty", "Other renewal"], v.kind || "AMC")}</select></div>
+    <div><label>Category</label><select name="category">${opts(BOOT.trades, v.category)}</select></div></div>
+    <label>Equipment / system</label><input name="equipment" value="${esc(v.equipment || "")}" placeholder="e.g. Lift - Kone" required>
+    <label>Vendor (if already in the app)</label><select name="vendor_key">${vendorOpts(v.vendor_key)}</select>
+    <label>Contact person</label><input name="contact_name" value="${esc(v.contact_name || "")}">
+    <div class="row"><div><label>Contact phone</label><input name="contact_phone" type="tel" value="${esc(v.contact_phone || "")}"></div>
+    <div><label>Contact email</label><input name="contact_email" type="email" value="${esc(v.contact_email || "")}"></div></div>
+    <div class="row"><div><label>Start</label><input type="date" name="start_date" value="${esc(v.start_date || "")}"></div>
+    <div><label>Ends / renews</label><input type="date" name="end_date" value="${esc(v.end_date || "")}" required></div></div>
+    <div class="row"><div><label>Payment due</label><input type="date" name="payment_due" value="${esc(v.payment_due || "")}"></div>
+    <div><label>Visits in contract</label><input name="visits_promised" inputmode="numeric" value="${esc(v.visits_promised || "")}"></div></div>
+    <div class="row"><div><label>Remind before end (days)</label><input name="remind_days" inputmode="numeric" value="${esc(v.remind_days || 30)}"></div>
+    <div><label>Amount finalised ₹ 🔒</label><input name="amount" inputmode="decimal" value="${esc(v.amount || "")}"></div></div>
+    <div class="muted" style="font-size:12px">🔒 Amount is private: only Owner/Manager see it (History, Ask, Money). Never emailed, never on the AMC card.</div>
+    <label>Notes</label><textarea name="notes">${esc(v.notes || "")}</textarea>
+    ${v.id ? `<label><input type="checkbox" name="cancelled" style="width:auto"> Cancelled</label>` : ""}` }),
+  payment: (v) => ({ title: "Record payment", fn: "savePayment", html: `
+    <div class="row"><div><label>Date</label><input type="date" name="date" value="${esc(v.date || today())}" required></div>
+    <div><label>Amount ₹</label><input name="amount" inputmode="decimal" value="${esc(v.amount || "")}" required></div></div>
+    <label>Paid to</label><select name="vendor_key">${vendorOpts(v.vendor_key)}</select>
+    <label>For job</label><select name="job_id"><option value=""></option>${(data ? data.jobs.concat(data.unpaid_jobs) : []).filter((j, i, a) => a.findIndex((x) => x.id === j.id) === i).map((j) => `<option value="${esc(j.id)}" ${j.id === v.job_id ? "selected" : ""}>${esc(j.subject)}</option>`).join("")}</select>
+    <label>Or for AMC</label><select name="amc_id"><option value=""></option>${(data ? data.amc : []).map((a) => `<option value="${esc(a.id)}" ${a.id === v.amc_id ? "selected" : ""}>${esc(a.equipment)}</option>`).join("")}</select>
+    <div class="row"><div><label>Mode</label><select name="mode">${opts(["UPI", "Cash", "Bank Transfer", "Cheque", "Card"], v.mode || "UPI")}</select></div>
+    <div><label>UTR / cheque no.</label><input name="reference" value="${esc(v.reference || "")}"></div></div>
+    <label>Notes</label><textarea name="notes"></textarea>` }),
+  replace: (v) => ({ title: "Replace " + v.name, fn: "replacePersonForm", html: `
+    <input type="hidden" name="key" value="${esc(v.key)}">
+    <div class="muted" style="font-size:13px">${esc(v.name)} stays on record (all visits kept) but is marked <b>Replaced</b>: shown last, crossed out, with the new person's number, and the gate warns if he turns up.</div>
+    <label>Replaced by (the new person)</label><select name="new_key">${(data ? data.vendors : []).filter((x) => x.key !== v.key)
+      .sort((a, b) => (String(b.trades || "").split(",").some((t) => t.trim() && String(v.trades || "").includes(t.trim())) ? 1 : 0) - (String(a.trades || "").split(",").some((t) => t.trim() && String(v.trades || "").includes(t.trim())) ? 1 : 0))
+      .map((x) => `<option value="${esc(x.key)}">${esc(x.name)}${x.trades ? " — " + esc(x.trades) : ""}</option>`).join("")}<option value="">— nobody yet / just stop using —</option></select>
+    <div class="muted" style="font-size:12px">New person not listed? Add them first (Who to call → + Add a person).</div>
+    <label>Why (optional)</label><textarea name="note" placeholder="e.g. better service, overcharged, conflict of interest"></textarea>` }),
+  staff: () => ({ title: "Add staff link", fn: "addStaff", html: `
+    <label>Name</label><input name="name" required>
+    <label>Level</label><select name="role">${opts(BOOT.staff_roles, "Driver")}</select>
+    <div class="muted" style="font-size:12px;margin-top:8px">Security / Driver / Other: gate screen only. Manager: gate + owner page + money + Ask (cannot add staff).</div>` }),
+};
+function openForm(kind, pre) {
+  const f = F[kind](pre || {});
+  openSheet(`<h3 style="margin:4px 0 8px">${f.title}</h3><form class="f" id="theForm">${f.html}
+    <datalist id="tradeList">${BOOT.trades.map((t) => `<option>${esc(t)}</option>`).join("")}</datalist>
+    <button class="save" type="submit">Save</button></form>`);
+  $("theForm").onsubmit = async (ev) => {
+    ev.preventDefault();
+    const fd = Object.fromEntries(new FormData(ev.target).entries());
+    ev.target.querySelectorAll("select[multiple]").forEach((s) => (fd[s.name] = [...s.selectedOptions].map((x) => x.value).join(", ")));
+    if (ev.target.cancelled) fd.cancelled = ev.target.cancelled.checked;
+    const btn = ev.target.querySelector("button.save"); btn.disabled = true; btn.textContent = "Saving…";
+    try {
+      const r = await call(f.fn, fd);
+      if (kind === "staff") {
+        openSheet(`<h3>Link for ${esc(fd.name)} (${esc(fd.role)})</h3><p class="muted">Send this to them. It opens their screen straight away — no password.</p>
+          <input readonly value="${esc(r.link)}"><div class="acts"><button data-copy="${esc(r.link)}">Copy link</button><a class="wa" href="https:\/\/wa.me/?text=${encodeURIComponent(r.link)}">Send on WhatsApp</a></div>`);
+        loadDash(); return;
+      }
+      toast("✓ Saved"); closeSheet(); loadWho(); loadDash(); if (!$("tab-jobs").classList.contains("hide")) loadWorks();
+    } catch (err) { toast(err.message, 1); btn.disabled = false; btn.textContent = "Save"; }
+  };
+}
+function openEdit(kind, id) {
+  if (kind === "job") return openForm("job", ((W ? W.jobs : []).concat(data.jobs, data.unpaid_jobs)).find((j) => j.id === id) || { id });
+  if (kind === "amc") return openForm("amc", data.amc.find((a) => a.id === id) || { id });
+}
+
+// ---- WORKS: house tasks by person / place, with "waits for" (28 Sep 2026)
+let W = null, wView = "person", wStat = "pending", wTimer, wSeq = 0;
+const OPEN = ["Open", "Scheduled", "In Progress"], PRI = { Urgent: 0, High: 1, Normal: 2, Low: 3 };
+$("wq").oninput = () => { clearTimeout(wTimer); wTimer = setTimeout(renderWorks, 200); };
+async function loadWorks() {
+  const mine = ++wSeq;
+  try { const r = await call("worksView"); if (mine !== wSeq) return; W = r; renderWorks(); }
+  catch (err) { $("jobList").innerHTML = `<div class="empty">${esc(err.message)}</div>`; }
+}
+function renderWorks() {
+  document.querySelectorAll("#wview button").forEach((b) => b.classList.toggle("on", b.dataset.wv === wView));
+  document.querySelectorAll("#wstat button").forEach((b) => b.classList.toggle("on", b.dataset.ws === wStat));
+  if (!W) return;
+  const q = $("wq").value.trim().toLowerCase();
+  const open = W.jobs.filter((j) => OPEN.includes(j.status)), done = W.jobs.filter((j) => j.status === "Done");
+  $("wStats").textContent = `${open.length} pending · ${open.filter((j) => j.blocked).length} waiting on other work · ${done.length} done so far`;
+  let list = wStat === "done" ? done : wStat === "blocked" ? open.filter((j) => j.blocked) : open;
+  if (q) list = list.filter((j) => [j.place, j.subject, j.vendor_name, j.description, j.trade].join(" ").toLowerCase().includes(q));
+  list = list.slice().sort((a, b) => (PRI[a.priority] ?? 2) - (PRI[b.priority] ?? 2) || String(a.reported_on).localeCompare(String(b.reported_on)));
+  const key = (j) => (wView === "person" ? j.vendor_key || "" : wView === "place" ? j.place || "" : "all");
+  const groups = {};
+  list.forEach((j) => (groups[key(j)] = groups[key(j)] || []).push(j));
+  const names = Object.keys(groups).sort((a, b) => (a === "" ? 1 : b === "" ? -1 : 0) || groups[b].length - groups[a].length);
+  if (!names.length) { $("jobList").innerHTML = `<div class="empty">${wStat === "done" ? "Nothing finished yet." : "No pending works" + (q ? " for “" + esc(q) + "”" : "") + ". Tap “+ New work”."}</div>`; return; }
+  $("jobList").innerHTML = names.map((g) => {
+    const js = groups[g], first = js[0];
+    const title = wView === "person" ? (first.vendor_name || "Not assigned yet") : wView === "place" ? (g || "No place given") : "All works";
+    const blk = js.filter((j) => j.blocked).length;
+    const head = `<h4><span>${esc(title)} <span class="muted" style="font-weight:400;font-size:13px">· ${js.length}${wStat === "done" ? " done" : " pending"}${blk && wStat !== "blocked" ? ", " + blk + " waiting" : ""}</span></span>
+      <span>${wView === "person" && g ? `<button data-hist="${esc(g)}">History</button> ` : ""}${wView === "person" && first.vendor_mobile ? `<a class="call" href="${telHref(first.vendor_mobile)}">📞 Call</a>` : ""}</span></h4>`;
+    const rows = js.map((j) => `<div class="wrow">
+      <div class="w1">${j.priority && j.priority !== "Normal" ? `<span class="pri ${esc(j.priority)}">${esc(j.priority.toUpperCase())}</span>` : ""}
+        <b>${desk("job", j.id, j.subject)}</b>
+        <span class="pl">${esc([wView !== "place" && j.place, wView !== "person" && j.vendor_name].filter(Boolean).join(" · "))}</span></div>
+      ${j.blocked ? `<div class="wait">⏳ Waits for: ${j.waits_for.filter((w) => OPEN.includes(w.status)).map((w) => esc([w.place, w.subject].filter(Boolean).join(" — ") + (w.vendor_name ? " (" + w.vendor_name + ")" : ""))).join("; ")}</div>` : ""}
+      ${j.status === "Scheduled" && j.scheduled_on ? `<div class="line muted">Scheduled ${d(j.scheduled_on)}</div>` : ""}
+      ${j.status === "In Progress" ? `<div class="line muted">In progress${j.last_visit ? " · last came " + esc(j.last_visit) : ""}</div>` : ""}
+      ${j.status === "Done" ? `<div class="line muted">Done ${d(j.completed_on)}${j.work_done ? " — " + esc(String(j.work_done).split("\n").pop()) : ""}</div>` : ""}
+      <div class="acts">${OPEN.includes(j.status) ? `<button data-jst="Done" data-id="${esc(j.id)}">✓ Done</button>${j.status !== "In Progress" ? `<button data-jst="In Progress" data-id="${esc(j.id)}">Started</button>` : ""}` : `<button data-jst="Open" data-id="${esc(j.id)}">Reopen</button>`}
+        <button data-edit="job" data-id="${esc(j.id)}">Edit</button></div></div>`).join("");
+    const add = wView === "person" && g ? `<div class="acts"><button data-form="job" data-pre='${esc(JSON.stringify({ vendor_key: g }))}'>+ Work for ${esc(title)}</button></div>`
+      : wView === "place" && g ? `<div class="acts"><button data-form="job" data-pre='${esc(JSON.stringify({ place: g }))}'>+ Work here</button></div>` : "";
+    return `<div class="wgrp">${head}${rows}${wStat === "done" ? "" : add}</div>`;
+  }).join("");
+}
+
+// ---- dashboard data
+// ---- contacts check (owner only)
+let cFilter = "check", cTimer, cSeq = 0;
+$("cq").oninput = () => { clearTimeout(cTimer); cTimer = setTimeout(loadContacts, 300); };
+const ERA_BADGE = { "Organised": "in", "New - to check": "Renewal", "Before": "Dormant" };
+async function loadContacts() {
+  const mine = ++cSeq;
+  let r;
+  try { r = await call("contactsView", cFilter, $("cq").value.trim()); } catch (err) { $("cList").innerHTML = `<div class="empty red">${esc(err.message)}</div>`; return; }
+  if (mine !== cSeq) return;
+  const s = r.summary;
+  if (!s) {
+    $("cHead").textContent = "Not checked yet. Tap “Check now” — it reads 98blisshome's Google Contacts. Nothing is deleted or renamed.";
+    $("cStats").innerHTML = ""; $("cChips").innerHTML = ""; $("cList").innerHTML = ""; return;
+  }
+  $("cHead").innerHTML = `Cut-off <b>${d(s.cutoff)}</b>: contacts from before it are <b>Before</b> until confirmed. A gate visit on the number, or your ✓ Confirm, makes one <b>Organised</b>. Last checked ${dt(s.checked_at)}. Nothing is deleted or renamed.`;
+  const e = s.era || {}, st = s.status || {};
+  $("cStats").innerHTML = `<div class="stat"><b>${e["Before"] || 0}</b><small>Before ${esc(d(s.cutoff))}</small></div>
+    <div class="stat"><b>${e["Organised"] || 0}</b><small>Organised</small></div>
+    <div class="stat"><b class="${s.to_check ? "amber" : ""}">${s.to_check}</b><small>to check</small></div>`;
+  const chips = [["check", "To check " + s.to_check], ["before", "Before " + (e["Before"] || 0)], ["new", "New " + (e["New - to check"] || 0)], ["organised", "Organised " + (e["Organised"] || 0)]]
+    .concat(["Active", "Recent", "Dormant", "Never came", "Not tracked", "Not in use"].filter((x) => st[x]).map((x) => [x, x + " " + st[x]])).concat([["all", "All " + s.total]]);
+  $("cChips").innerHTML = chips.map(([v, l]) => `<button data-cf="${esc(v)}" class="${v === cFilter ? "on" : ""}">${esc(l)}</button>`).join("");
+  $("cList").innerHTML = r.rows.length ? r.rows.map((c) => {
+    const m = c.mobile, dial = String(c.dial || "").replace(/[^\d+]/g, "");
+    return `<div class="card"><div class="top"><div><b class="n">${esc(c.name || "(no name)")}</b>
+      <div class="muted">${esc([c.company, c.phones.join(", "), c.emails].filter(Boolean).join(" · "))}</div></div>
+      <span class="badge ${ERA_BADGE[c.era] || ""}">${esc(c.era === "Before" ? "Before " + d(r.summary.cutoff) : c.era)}</span></div>
+      <div class="line">${c.status && c.status !== "Not tracked" ? stBadge(c.status) : `<span class="muted">${esc(c.status || "Not tracked")} (not a service contact)</span>`}
+        ${c.verified_on ? `<span class="muted"> · ✓ ${esc(c.verified_by)} ${d(c.verified_on)}</span>` : ""}</div>
+      ${c.issues.map((i) => `<div class="line amber">⚠ ${esc(i)}</div>`).join("")}
+      <div class="acts">${m ? `<a class="call" href="tel:+91${m}">📞 Call</a><a class="wa" href="https:\/\/wa.me/91${m}" target="_blank">WhatsApp</a><a href="https:\/\/www.truecaller.com/search/in/${m}" target="_blank">Truecaller</a>` : dial ? `<a class="call" href="tel:${esc(dial)}">📞 Call</a>` : ""}
+        ${c.era !== "Organised" ? `<button data-cact="confirm" data-id="${esc(c.resource)}">✓ Confirm</button>` : ""}
+        ${c.status === "Not in use" ? `<button data-cact="inuse" data-id="${esc(c.resource)}">In use</button>` : `<button data-cact="notinuse" data-id="${esc(c.resource)}">Not in use</button>`}
+        <a href="${esc(c.open)}" target="_blank">Open</a></div></div>`;
+  }).join("") + (r.total > r.rows.length ? `<div class="empty">Showing ${r.rows.length} of ${r.total} — search to narrow.</div>` : "") : '<div class="empty">Nothing here.</div>';
+}
+
+async function loadDash() {
+  data = await call("dashboard", $("days").value);
+  const x = data, today = x.today;
+  $("me").textContent = BOOT.role === "owner" ? "You · Owner" : BOOT.name + " · Manager";
+  $("staffTab").classList.toggle("hide", BOOT.role !== "owner");
+  $("contactsTab").classList.toggle("hide", BOOT.role !== "owner");
+  $("insideList").innerHTML = x.inside.length ? x.inside.map((r) => `<div class="card"><div class="top"><div><b class="n">${esc(r.person_name)}</b>
+      <div class="muted">${esc([r.entry_type === "Maintenance" ? "Service" : r.entry_type, r.trade, r.company || r.courier].filter(Boolean).join(" · "))}</div>
+      <div class="line muted">since ${dt(r.check_in)}${r.in_approx ? "~" : ""}${r.registered_by ? " · by " + esc(r.registered_by) : ""}</div></div>
+      ${r.earlier_day ? '<span class="badge bad">SINCE EARLIER DAY</span>' : '<span class="badge in">INSIDE</span>'}</div>${acts(r.mobile, r.person_key)}</div>`).join("") : '<div class="empty">Nobody inside.</div>';
+  $("recentList").innerHTML = x.people.length ? x.people.map((r) => `<div class="card"><div class="top"><div><b class="n">${esc(r.person_name)}</b>
+      <div class="muted">${esc([r.trade, r.company].filter(Boolean).join(" · "))}</div></div>
+      ${r.inside ? '<span class="badge in">INSIDE</span>' : `<span class="badge">${ago(r.last_in)}</span>`}</div>
+      <div class="line muted">${r.visits} visit${r.visits == 1 ? "" : "s"} · last ${dt(r.last_in)}</div>${acts(r.mobile, r.key)}</div>`).join("") : '<div class="empty">No service visits in this period.</div>';
+
+  // AMC: due dates + who to contact. No amounts on this screen.
+  $("amcList").innerHTML = x.amc.length ? x.amc.map((a) => {
+    const left = Math.round((new Date(a.end_date + "T00:00:00+05:30") - new Date(today + "T00:00:00+05:30")) / 86400000);
+    const overdue = a.next_visit_due && a.next_visit_due < today;
+    const payLate = a.payment_due && a.payment_due < today;
+    return `<div class="card"><div class="top"><div><b class="n">${desk("amc", a.id, a.equipment)}</b>
+      <div class="muted">${esc([a.kind, a.category, a.vendor_name].filter(Boolean).join(" · "))}</div></div>
+      <span class="badge ${a.kind === "Warranty" ? "Warranty" : esc(a.status.split(" ")[0])}">${esc(a.kind === "Warranty" && a.status === "Active" ? "Warranty" : a.status)}</span></div>
+      <div class="line">${a.kind === "Warranty" ? "Warranty ends" : "Renews"} <b>${d(a.end_date)}</b> ${left < 0 ? `<span class="red">(${-left} days ago)</span>` : left <= 30 ? `<span class="amber">(in ${left} days)</span>` : `<span class="muted">(in ${left} days)</span>`}</div>
+      ${a.visits_promised || a.next_visit_due ? `<div class="line">Visits ${a.visits_done || 0} of ${a.visits_promised || "?"}${a.next_visit_due ? ` · next due <span class="${overdue ? "red" : ""}">${d(a.next_visit_due)}${overdue ? " OVERDUE" : ""}</span>` : ""}</div>` : ""}
+      ${a.payment_due ? `<div class="line">Payment due <b class="${payLate ? "red" : ""}">${d(a.payment_due)}</b></div>` : ""}
+      <div class="line">👤 ${esc([a.contact_name, a.contact_phone, a.contact_email].filter(Boolean).join(" · ") || "no contact recorded")}</div>
+      <div class="acts">${a.contact_phone ? `<a class="call" href="${telHref(a.contact_phone)}">📞 Call</a>` : ""}${a.contact_email ? `<a href="mailto:${esc(a.contact_email)}">✉️ Email</a>` : ""}
+        ${a.mail_link ? `<a href="${esc(a.mail_link)}" target="_blank">Open email</a>` : ""}
+        ${a.vendor_key ? `<button data-hist="${esc(a.vendor_key)}">History</button>` : ""}
+        ${a.kind !== "Warranty" ? `<button data-form="job" data-pre='${esc(JSON.stringify({ amc_id: a.id, vendor_key: a.vendor_key, trade: a.category, job_type: "AMC Visit", status: "Scheduled", subject: a.equipment + " - AMC visit", scheduled_on: a.next_visit_due }))}'>Visit</button>` : ""}
+        <button data-form="payment" data-pre='${esc(JSON.stringify({ amc_id: a.id, vendor_key: a.vendor_key }))}'>Pay</button>
+        ${a.status === "Renewal Due" || a.status === "Expired" ? `<button data-renew="${esc(a.id)}">Renew</button>` : ""}</div></div>`;
+  }).join("") : '<div class="empty">No AMC or warranty yet — add them, or pick them from the Mail tab.</div>';
+
+  // Mail finds
+  $("nMail").textContent = x.mail.length ? "(" + x.mail.length + ")" : "";
+  $("mailList").innerHTML = x.mail.length ? x.mail.map((m) => {
+    const phone = String(m.phones || "").split(", ")[0] || "";
+    const same = x.amc.find((a) => a.status !== "Cancelled" && ((m.person_key && a.vendor_key === m.person_key) || (m.trade && a.category === m.trade)));
+    const amcPre = { kind: m.kind === "Warranty" ? "Warranty" : "AMC", category: m.trade || "Other", equipment: (m.trade ? m.trade + " - " : "") + (m.from_name || m.from_email),
+      contact_name: m.from_name, contact_email: m.from_email, contact_phone: phone, end_date: m.due, mail_id: m.id, mail_link: m.link, vendor_key: m.person_key };
+    const upd = same ? Object.assign({}, same, { end_date: m.due || same.end_date, mail_id: m.id, mail_link: m.link }) : null;
+    return `<div class="card"><div><span class="badge ${m.kind === "Warranty" ? "Warranty" : m.kind.startsWith("AMC") ? "Renewal" : "in"}">${esc(m.kind)}</span> ${m.trade ? `<span class="badge">${esc(m.trade)}</span>` : ""}</div>
+      <div class="line"><b>${esc(m.subject)}</b></div>
+      <div class="muted">${esc([m.from_name, m.from_email].filter(Boolean).join(" · "))} · ${d(m.received)}${m.person_name ? " · " + esc(m.person_name) : " · new sender"}</div>
+      ${m.dates ? `<div class="line">Dates: ${m.due ? `<b>${d(m.due)}</b> · ` : ""}<span class="muted">${esc(m.dates)}</span></div>` : ""}
+      ${m.phones ? `<div class="line">Phones: ${esc(m.phones)}</div>` : ""}
+      <div class="acts">${m.kind === "AMC / Renewal" || m.kind === "Warranty" ? `<button data-form="amc" data-pre='${esc(JSON.stringify(amcPre))}'>Make ${m.kind === "Warranty" ? "warranty" : "AMC"}</button>` : ""}
+        ${upd ? `<button data-form="amc" data-pre='${esc(JSON.stringify(upd))}'>Update ${esc(same.equipment.slice(0, 14))}</button>` : ""}
+        ${!m.person_key && phone ? `<button data-form="person" data-pre='${esc(JSON.stringify({ mail_id: m.id, mobile: phone, name: m.from_name, email: m.from_email, trades: m.trade }))}'>Add contact</button>` : ""}
+        <a href="${esc(m.link)}" target="_blank">Open</a><button data-mail="done" data-id="${esc(m.id)}">Done</button><button data-mail="ignore" data-id="${esc(m.id)}">Ignore</button></div></div>`;
+  }).join("") : '<div class="empty">Nothing new from mail.</div>';
+
+  if (!$("tab-jobs").classList.contains("hide")) loadWorks();
+
+  const unpaidTotal = x.unpaid_jobs.reduce((s, j) => s + (j.balance || 0), 0) + x.amc.reduce((s, a) => s + (a.amount ? a.balance || 0 : 0), 0);
+  $("moneyStats").innerHTML = `<div class="stat"><b>${inr(x.month_spend)}</b><small>paid this month</small></div>
+    <div class="stat"><b class="${unpaidTotal ? "red" : ""}">${inr(unpaidTotal)}</b><small>balance due</small></div>
+    <div class="stat"><b>${inr(x.payments.reduce((s, p) => s + (p.amount || 0), 0))}</b><small>last 90 days</small></div>`;
+  const unpaid = x.unpaid_jobs.map((j) => [desk("job", j.id, j.subject), esc(j.vendor_name || ""), `<span class="red">${inr(j.balance)}</span>`])
+    .concat(x.amc.filter((a) => a.amount && a.balance > 0).map((a) => [desk("amc", a.id, "AMC: " + a.equipment), esc(a.vendor_name || ""), `<span class="red">${inr(a.balance)}</span>`]));
+  $("unpaidList").innerHTML = unpaid.length ? `<table><tr><th>For</th><th>Vendor</th><th>Due</th></tr>${unpaid.map((r) => `<tr>${r.map((c) => `<td>${c}</td>`).join("")}</tr>`).join("")}</table>` : '<div class="empty">Nothing unpaid.</div>';
+  $("payList").innerHTML = x.payments.length ? `<table><tr><th>Date</th><th>Vendor</th><th>Amount</th><th>Mode</th></tr>${x.payments.map((p) => `<tr><td>${d(p.date)}</td><td>${p.vendor_key ? `<a href="#" data-hist="${esc(p.vendor_key)}">${esc(p.vendor_name || "")}</a>` : ""}</td><td>${inr(p.amount)}</td><td>${esc(p.mode)}</td></tr>`).join("")}</table>` : '<div class="empty">No payments recorded.</div>';
+
+  if (BOOT.role === "owner") {
+    $("staffList").innerHTML = `<div class="card"><b class="n">You</b> <span class="lvl">Owner</span><div class="line muted">Everything, including this Staff tab</div></div>` +
+      x.staff.map((s) => `<div class="card"><div class="top"><div><b class="n">${esc(s.name)}</b> <span class="lvl">${esc(s.role)}</span>
+        <div class="line muted">${esc(s.sees)}${s.last_used ? " · last used " + dt(s.last_used) : ""}</div></div>
+        <span class="badge ${s.active ? "in" : "bad"}">${s.active ? "ON" : "OFF"}</span></div>
+        <div class="acts">${s.active ? `<button data-copy="${esc(s.link)}">Copy link</button><a class="wa" href="https:\/\/wa.me/?text=${encodeURIComponent(s.link)}">WhatsApp</a>` : ""}
+        ${s.shared ? `<button data-staff="reset">New link</button>` : `<button data-staff="${s.active ? "off" : "on"}" data-id="${esc(s.key)}">${s.active ? "Switch off" : "Switch on"}</button>`}</div></div>`).join("");
+  }
+}
+$("days").onchange = loadDash;
+
+$("house").textContent = BOOT.house;
+$("gateLink").href = BOOT.url + "?k=" + BOOT.k + "&p=gate";
+$("sheetLink").onclick = (e) => { e.preventDefault(); if (data) window.open(data.sheet_url, "_blank"); };
+$("trades").innerHTML += BOOT.trades.map((t) => `<button data-t="${esc(t)}">${esc(t)}</button>`).join("");
+loadDash();
+})();
+</script>
+</body>
+</html>
