@@ -87,6 +87,7 @@ form.f button.save{width:100%;margin-top:16px;padding:14px;border:0;border-radiu
 .card.old{background:#fff7f7;border:1px solid #fecaca}.card.old b.n{text-decoration:line-through;color:#6b7280}
 .repl{background:#fee2e2;color:#991b1b;border-radius:10px;padding:8px 10px;margin-top:8px;font-size:14px;font-weight:600}
 .lvl{font-size:11px;background:#fca311;color:#14213d;border-radius:999px;padding:1px 7px;font-weight:700;margin-left:4px}
+.tellink{white-space:nowrap;font-weight:600;color:#1d4ed8;text-decoration:none}
 </style>
 </head>
 <body>
@@ -177,6 +178,8 @@ const tm = (s) => s ? new Date(String(s).replace(" ", "T") + "+05:30").toLocaleT
 const ago = (s) => { if (!s) return ""; const n = Math.round((Date.now() - new Date(String(s).slice(0, 10) + "T12:00:00+05:30")) / 86400000); return n <= 0 ? "today" : n === 1 ? "yesterday" : n < 60 ? n + " days ago" : Math.round(n / 30) + " months ago"; };
 const digits = (m) => String(m || "").replace(/\D/g, "").slice(-10);
 const telHref = (m) => { const x = String(m || "").replace(/\D/g, ""); return x.length === 10 ? "tel:+91" + x : x.length > 10 && x.startsWith("91") ? "tel:+" + x : "tel:" + x; };
+// any Indian mobile written in a text becomes a tap-to-call link (28 Sep 2026: "direct calling options from the mobile")
+const telLinks = (html) => String(html).replace(/(\+91[\s-]?)?\b([6-9]\d{4})[\s-]?(\d{5})\b/g, (x, a, b, c) => `<a class="tellink" href="tel:+91${b}${c}">📞 ${x}</a>`);
 const acts = (mobile, contact, email) => `<div class="acts">
   ${mobile ? `<a class="call" href="${telHref(mobile)}">📞 Call</a>${digits(mobile).length === 10 ? `<a class="wa" href="https:\/\/wa.me/91${digits(mobile)}">WhatsApp</a>` : ""}` : ""}
   ${email ? `<a href="mailto:${esc(email)}">✉️ Email</a>` : ""}
@@ -208,9 +211,9 @@ async function doAsk(q) {
   $("answers").prepend(box);
   try {
     const r = await call("ask", q);
-    box.innerHTML = `<div class="q">${esc(q)}${r.heading ? " · " + esc(r.heading) : ""}</div>` + r.lines.map((l) => `<p>${l}</p>`).join("") +
+    box.innerHTML = `<div class="q">${esc(q)}${r.heading ? " · " + esc(r.heading) : ""}</div>` + r.lines.map((l) => `<p>${telLinks(l)}</p>`).join("") +
       r.people.slice().sort((a, b) => ((a.replaced ? 1 : 0) - (b.replaced ? 1 : 0)) || ((b.current ? 1 : 0) - (a.current ? 1 : 0))).slice(0, 4).map((p) => `<div class="acts" style="margin-top:6px"><b style="flex:2;align-self:center${p.replaced ? ";text-decoration:line-through;color:#991b1b" : ""}">${esc(p.name)}${p.replaced ? " (replaced)" : p.current ? " ⭐ current" : ""}</b>${p.mobile && !p.replaced ? `<a class="call" href="${telHref(p.mobile)}">📞 Call</a>` : ""}<button data-hist="${esc(p.key)}">History</button></div>`).join("") +
-      (r.links.length ? `<div class="acts">${r.links.slice(0, 3).map((l) => `<a href="${esc(l.url)}" target="_blank">✉️ ${esc(l.label.slice(0, 28))}</a>`).join("")}</div>` : "");
+      (r.links.length ? `<div class="acts">${r.links.slice(0, 6).map((l) => `<a href="${esc(l.url)}" target="_blank">✉️ ${esc(l.label.slice(0, 28))}</a>`).join("")}</div>` : "");
   } catch (e) { box.innerHTML = `<div class="q">${esc(q)}</div><p class="red">${esc(e.message)}</p>`; }
 }
 
@@ -587,7 +590,7 @@ async function loadDash() {
       <div class="line"><b>${esc(m.subject)}</b></div>
       <div class="muted">${esc([m.from_name, m.from_email].filter(Boolean).join(" · "))} · ${d(m.received)}${m.person_name ? " · " + esc(m.person_name) : " · new sender"}</div>
       ${m.dates ? `<div class="line">Dates: ${m.due ? `<b>${d(m.due)}</b> · ` : ""}<span class="muted">${esc(m.dates)}</span></div>` : ""}
-      ${m.phones ? `<div class="line">Phones: ${esc(m.phones)}</div>` : ""}
+      ${m.phones ? `<div class="line">Phones: ${telLinks(esc(m.phones))}</div>` : ""}
       <div class="acts">${m.kind === "AMC / Renewal" || m.kind === "Warranty" ? `<button data-form="amc" data-pre='${esc(JSON.stringify(amcPre))}'>Make ${m.kind === "Warranty" ? "warranty" : "AMC"}</button>` : ""}
         ${upd ? `<button data-form="amc" data-pre='${esc(JSON.stringify(upd))}'>Update ${esc(same.equipment.slice(0, 14))}</button>` : ""}
         ${!m.person_key && phone ? `<button data-form="person" data-pre='${esc(JSON.stringify({ mail_id: m.id, mobile: phone, name: m.from_name, email: m.from_email, trades: m.trade }))}'>Add contact</button>` : ""}

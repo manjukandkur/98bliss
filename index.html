@@ -101,6 +101,7 @@ textarea{min-height:70px;font-size:16px}
 .sheet .save{width:100%;margin-top:14px;padding:14px;border:0;border-radius:12px;background:var(--ok);color:#fff;font-size:17px;font-weight:700}
 .wphoto{display:flex;gap:10px;align-items:center}.wphoto label.pbtn{margin:0;flex:1;text-align:center;padding:12px;border:2px dashed #94a3b8;border-radius:12px;color:var(--ink);font-size:15px}
 .wphoto img{width:60px;height:60px;object-fit:cover;border-radius:10px;display:none}
+.callbtn{display:inline-block;margin:4px 0 2px;padding:6px 14px;border-radius:999px;background:#dcfce7;color:#166534;font-weight:700;font-size:14px;text-decoration:none}
 </style>
 </head>
 <body>
@@ -438,7 +439,7 @@ async function loadInside() {
       ${r.photo ? `<img src="${esc(r.photo)}" alt="">` : `<img alt="">`}
       <div class="t">
         <span class="tag ${esc(r.entry_type)}">${r.entry_type === "Maintenance" ? "Service" : esc(r.entry_type)}</span>
-        <b>${esc(r.person_name)}</b>
+        <b>${esc(r.person_name)}</b>${r.mobile ? `<a class="callbtn" href="tel:+91${esc(String(r.mobile).replace(/\D/g, "").slice(-10))}">📞 Call</a>` : ""}
         <small>${esc([r.company || r.courier, r.trade, r.meeting && "for " + r.meeting].filter(Boolean).join(" · "))}</small>
         <small>In at ${fmt(r.check_in)}${r.in_approx ? " (approx)" : ""} · ${since(r.check_in)} ago${r.registered_by ? " · by " + esc(r.registered_by) : ""}</small>
         ${r.earlier_day ? `<span class="red">Not checked out — when did they leave?</span>` : ""}
@@ -494,7 +495,7 @@ async function loadToday() {
   $("todayList").innerHTML = rows.length ? rows.map((r) => `
     <div class="card"><div class="t">
       <span class="tag ${esc(r.entry_type)}">${r.entry_type === "Maintenance" ? "Service" : esc(r.entry_type)}</span>
-      <b>${esc(r.person_name)}</b>
+      <b>${esc(r.person_name)}</b>${r.mobile ? `<a class="callbtn" href="tel:+91${esc(String(r.mobile).replace(/\D/g, "").slice(-10))}">📞 Call</a>` : ""}
       <small>${esc(r.company || r.courier || "")}</small>
       <small>In ${fmt(r.check_in)}${r.in_approx ? "~" : ""}${r.check_out ? " · Out " + fmt(r.check_out) + (r.out_approx ? "~" : "") : " · still inside"}${r.registered_by ? " · by " + esc(r.registered_by) : ""}</small>
       ${r.work_done ? `<small>Work: ${esc(r.work_done)}</small>` : ""}
