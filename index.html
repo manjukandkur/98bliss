@@ -78,6 +78,29 @@ textarea{min-height:70px;font-size:16px}
 .tag.cur{background:#dcfce7;color:#166534}
 .wk{margin-top:6px;font-size:13.5px;line-height:1.45}.wk b{display:block;margin-bottom:2px}
 .starBtn{margin-top:6px;border:1px solid #86efac;background:#fff;color:#166534;border-radius:999px;padding:5px 12px;font-size:13px;font-weight:600}.tag.in{background:#dbeafe;color:#1e40af}
+.seg{display:flex;background:#e5e7eb;border-radius:12px;padding:3px;margin-bottom:12px}
+.seg button{flex:1;border:0;background:transparent;padding:9px 4px;border-radius:9px;font-size:15px;color:var(--ink)}
+.seg button.on{background:#fff;font-weight:700;box-shadow:0 1px 2px rgba(0,0,0,.1)}
+.wnew{width:100%;padding:12px;border:2px dashed #94a3b8;border-radius:12px;background:#fff;font-size:16px;font-weight:600;color:var(--ink);margin-bottom:8px}
+#worksBox .chips{margin:8px 0 0}
+.wgrp{background:var(--card);border-radius:14px;padding:10px 12px;margin:10px 0;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.wgrp h4{margin:2px 0 6px;font-size:16px;display:flex;justify-content:space-between;gap:8px;align-items:center}
+.wgrp h4 a,.wgrp h4 button{font-size:13px;font-weight:600;border:1px solid #cbd5e1;background:#fff;border-radius:999px;padding:4px 10px;color:var(--ink);text-decoration:none;white-space:nowrap}
+.wrow{border-top:1px solid var(--line);padding:8px 0}
+.wrow b{font-size:15.5px}.wrow .pl{color:var(--muted);font-size:13px;margin-left:4px}
+.pri{font-size:11px;font-weight:700;padding:1px 6px;border-radius:6px;margin-right:4px;background:#fee2e2;color:#991b1b}.pri.High{background:#ffedd5;color:#9a3412}.pri.Low{background:#e5e7eb;color:#374151}
+.wait{font-size:13px;color:var(--warn);margin-top:3px}
+.thumbs{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}.thumbs img{width:56px;height:56px;object-fit:cover;border-radius:8px;background:#e5e7eb}
+.wacts{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}.wacts button{border:1px solid #cbd5e1;background:#fff;border-radius:10px;padding:8px 12px;font-size:14px;color:var(--ink)}
+.wacts button.ok{background:var(--ok);color:#fff;border-color:var(--ok);font-weight:600}
+.sheet{position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:20;display:none;align-items:flex-end;justify-content:center}
+.sheet.open{display:flex}
+.sheet .box{background:#fff;width:100%;max-width:640px;max-height:92vh;overflow:auto;border-radius:16px 16px 0 0;padding:14px 16px calc(20px + env(safe-area-inset-bottom));position:relative}
+.sheet .close{position:absolute;right:10px;top:8px;border:0;background:#f1f5f9;border-radius:999px;width:34px;height:34px;font-size:20px}
+.sheet h3{margin:4px 40px 6px 0}
+.sheet .save{width:100%;margin-top:14px;padding:14px;border:0;border-radius:12px;background:var(--ok);color:#fff;font-size:17px;font-weight:700}
+.wphoto{display:flex;gap:10px;align-items:center}.wphoto label.pbtn{margin:0;flex:1;text-align:center;padding:12px;border:2px dashed #94a3b8;border-radius:12px;color:var(--ink);font-size:15px}
+.wphoto img{width:60px;height:60px;object-fit:cover;border-radius:10px;display:none}
 </style>
 </head>
 <body>
@@ -86,7 +109,7 @@ textarea{min-height:70px;font-size:16px}
   <nav>
     <button data-tab="new" class="on">New visitor</button>
     <button data-tab="inside">Inside <span id="nIn"></span></button>
-    <button data-tab="today">Today</button>
+    <button data-tab="today">Today · Works</button>
   </nav>
 </header>
 <div id="toast"></div>
@@ -154,7 +177,20 @@ textarea{min-height:70px;font-size:16px}
 </main>
 
 <main id="tab-inside" class="hide"><div id="insideList"></div></main>
-<main id="tab-today" class="hide"><div id="todayList"></div></main>
+<main id="tab-today" class="hide">
+  <div class="seg" id="tSeg"><button data-seg="vis" class="on">Visitors today</button><button data-seg="works">🔧 Works <span id="nWk"></span></button></div>
+  <div id="todayList"></div>
+  <div id="worksBox" class="hide">
+    <button class="wnew" data-wform="1">+ New work</button>
+    <input id="wq" placeholder="Search: place, person, problem…" autocomplete="off">
+    <div class="chips" id="wview"><button data-wv="person" class="on">By person</button><button data-wv="place">By place</button><button data-wv="all">All</button></div>
+    <div class="chips" id="wstat"><button data-ws="pending" class="on">Pending</button><button data-ws="blocked">Waiting</button><button data-ws="done">Done (all time)</button></div>
+    <div class="hint" id="wStats"></div>
+    <div id="jobList"></div>
+  </div>
+  <input id="wAddPh" type="file" accept="image/*" capture="environment" class="hide">
+</main>
+<div id="sheet" class="sheet"><div class="box" id="sheetBox"></div></div>
 
 <script type="text/plain" id="main">
 (() => {
@@ -188,8 +224,16 @@ function showTab(t) {
   document.querySelectorAll("nav button").forEach((b) => b.classList.toggle("on", b.dataset.tab === t));
   ["new", "inside", "today"].forEach((x) => $("tab-" + x).classList.toggle("hide", x !== t));
   if (t === "inside") loadInside();
-  if (t === "today") loadToday();
+  if (t === "today") (seg === "works" ? loadWorks() : loadToday());
 }
+let seg = "vis";
+$("tSeg").onclick = (e) => {
+  const b = e.target.closest("button"); if (!b) return;
+  seg = b.dataset.seg;
+  [...$("tSeg").children].forEach((x) => x.classList.toggle("on", x === b));
+  $("todayList").classList.toggle("hide", seg !== "vis"); $("worksBox").classList.toggle("hide", seg !== "works");
+  seg === "works" ? loadWorks() : loadToday();
+};
 
 // ---- entry type
 document.querySelectorAll(".types button").forEach((b) => b.onclick = () => { autoType = false; setType(b.dataset.type); });
@@ -457,7 +501,121 @@ async function loadToday() {
     </div></div>`).join("") : '<div class="empty">No entries today yet.</div>';
 }
 
-refreshCount(); loadRegulars();
+// ---- WORKS inside "Today · Works" (28 Sep 2026: gate people see and tick house works too; restrict later with Settings works_level)
+let W = null, wView = "person", wStat = "pending", wSeq = 0, wAddFor = "", wTimer;
+const OPEN = ["Open", "Scheduled", "In Progress"], PRI = { Urgent: 0, High: 1, Normal: 2, Low: 3 };
+const dd = (s) => s ? new Date(s + "T00:00:00+05:30").toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "2-digit" }) : "";
+const opts = (list, v) => list.map((x) => `<option ${x === v ? "selected" : ""}>${esc(x)}</option>`).join("");
+function openSheet(html) { $("sheetBox").innerHTML = '<button class="close" type="button">×</button>' + html; $("sheet").classList.add("open"); }
+function closeSheet() { $("sheet").classList.remove("open"); }
+$("sheet").addEventListener("click", (e) => { if (e.target.id === "sheet" || e.target.closest(".close")) closeSheet(); });
+async function loadWorks() {
+  const mine = ++wSeq;
+  if (!W) $("jobList").innerHTML = '<div class="empty">Loading…</div>';
+  try { const r = await call("worksView"); if (mine !== wSeq) return; W = r; renderWorks(); }
+  catch (err) { $("jobList").innerHTML = `<div class="empty">${esc(err.message)}</div>`; }
+}
+async function worksCount() {
+  try { const r = await call("worksView"); if (!W) W = r; const n = r.jobs.filter((j) => OPEN.includes(j.status)).length; $("nWk").textContent = n ? "(" + n + ")" : ""; } catch (e) { }
+}
+$("wq").oninput = () => { clearTimeout(wTimer); wTimer = setTimeout(renderWorks, 200); };
+$("wview").onclick = (e) => { const b = e.target.closest("button"); if (b) { wView = b.dataset.wv; renderWorks(); } };
+$("wstat").onclick = (e) => { const b = e.target.closest("button"); if (b) { wStat = b.dataset.ws; renderWorks(); } };
+function renderWorks() {
+  [...$("wview").children].forEach((b) => b.classList.toggle("on", b.dataset.wv === wView));
+  [...$("wstat").children].forEach((b) => b.classList.toggle("on", b.dataset.ws === wStat));
+  if (!W) return;
+  const q = $("wq").value.trim().toLowerCase();
+  const open = W.jobs.filter((j) => OPEN.includes(j.status)), done = W.jobs.filter((j) => j.status === "Done");
+  $("nWk").textContent = open.length ? "(" + open.length + ")" : "";
+  $("wStats").textContent = `${open.length} pending · ${open.filter((j) => j.blocked).length} waiting on other work · ${done.length} done so far`;
+  let list = wStat === "done" ? done : wStat === "blocked" ? open.filter((j) => j.blocked) : open;
+  if (q) list = list.filter((j) => [j.place, j.subject, j.vendor_name, j.description, j.trade].join(" ").toLowerCase().includes(q));
+  list = wStat === "done" ? list.slice().sort((a, b) => String(b.completed_on).localeCompare(String(a.completed_on)))
+    : list.slice().sort((a, b) => (PRI[a.priority] ?? 2) - (PRI[b.priority] ?? 2) || String(a.reported_on).localeCompare(String(b.reported_on)));
+  const key = (j) => (wView === "person" ? j.vendor_key || "" : wView === "place" ? j.place || "" : "all");
+  const groups = {};
+  list.forEach((j) => (groups[key(j)] = groups[key(j)] || []).push(j));
+  const names = Object.keys(groups).sort((a, b) => (a === "" ? 1 : b === "" ? -1 : 0) || groups[b].length - groups[a].length);
+  if (!names.length) { $("jobList").innerHTML = `<div class="empty">${wStat === "done" ? "Nothing finished yet." : "No pending works" + (q ? " for “" + esc(q) + "”" : "") + ". Tap “+ New work”."}</div>`; return; }
+  $("jobList").innerHTML = names.map((g) => {
+    const js = groups[g], first = js[0];
+    const title = wView === "person" ? (first.vendor_name || "Not assigned yet") : wView === "place" ? (g || "No place given") : "All works";
+    const head = `<h4><span>${esc(title)} <span style="font-weight:400;font-size:13px;color:var(--muted)">· ${js.length}${wStat === "done" ? " done" : " pending"}</span></span>
+      <span>${wView === "person" && g ? `<button data-whist="${esc(g)}">History</button> ` : ""}${wView === "person" && first.vendor_mobile ? `<a href="tel:+91${esc(first.vendor_mobile)}">📞 Call</a>` : ""}</span></h4>`;
+    const rows = js.map((j) => `<div class="wrow">
+      <div>${j.priority && j.priority !== "Normal" ? `<span class="pri ${esc(j.priority)}">${esc(j.priority.toUpperCase())}</span>` : ""}<b>${esc(j.subject)}</b>
+        <span class="pl">${esc([wView !== "place" && j.place, wView !== "person" && j.vendor_name].filter(Boolean).join(" · "))}</span></div>
+      ${j.blocked ? `<div class="wait">⏳ Waits for: ${j.waits_for.filter((w) => OPEN.includes(w.status)).map((w) => esc([w.place, w.subject].filter(Boolean).join(" — "))).join("; ")}</div>` : ""}
+      ${j.description ? `<small style="color:var(--muted)">${esc(j.description)}</small>` : ""}
+      ${(j.photos || []).length ? `<div class="thumbs">${j.photos.map((p) => `<img src="${esc(p.thumb)}" data-wph="${esc(p.id)}" data-job="${esc(j.id)}" alt="photo">`).join("")}</div>` : ""}
+      ${j.status === "In Progress" ? `<small style="color:var(--muted)">In progress${j.last_visit ? " · last came " + esc(j.last_visit) : ""}</small>` : ""}
+      ${j.status === "Done" ? `<small style="color:var(--muted)">Done ${dd(j.completed_on)}${j.work_done ? " — " + esc(String(j.work_done).split("\n").pop()) : ""}</small>` : ""}
+      <div class="wacts">${OPEN.includes(j.status) ? `<button class="ok" data-jst="Done" data-id="${esc(j.id)}">✓ Done</button>${j.status !== "In Progress" ? `<button data-jst="In Progress" data-id="${esc(j.id)}">Started</button>` : ""}` : `<button data-jst="Open" data-id="${esc(j.id)}">Reopen</button>`}
+        <button data-wedit="${esc(j.id)}">Edit</button><button data-addph="${esc(j.id)}">📷</button></div></div>`).join("");
+    const add = wStat === "done" ? "" : wView === "person" && g ? `<div class="wacts"><button data-wform="1" data-vk="${esc(g)}">+ Work for ${esc(title)}</button></div>`
+      : wView === "place" && g ? `<div class="wacts"><button data-wform="1" data-pl="${esc(g)}">+ Work here</button></div>` : "";
+    return `<div class="wgrp">${head}${rows}${add}</div>`;
+  }).join("");
+}
+function workForm(v) {
+  const vendors = W ? W.vendors || [] : [];
+  openSheet(`<h3>${v.id ? "Edit work" : "New work"}</h3><form id="wForm">
+    <label>Where (place / room)</label><input name="place" value="${esc(v.place || "")}" list="wPlaces" placeholder="e.g. Manju bathroom, Mother room" autocomplete="off">
+    <datalist id="wPlaces">${(W ? W.places : []).map((p) => `<option>${esc(p)}</option>`).join("")}</datalist>
+    <label>What is the work?</label><input name="subject" value="${esc(v.subject || "")}" placeholder="e.g. Health faucet leaking" required>
+    <label>Who does it</label><select name="vendor_key"><option value="">— not decided yet —</option>${vendors.map((p) => `<option value="${esc(p.key)}" ${p.key === v.vendor_key ? "selected" : ""}>${p.current ? "⭐ " : ""}${esc(p.name)}${p.trades || p.company ? " — " + esc([p.trades, p.company].filter(Boolean).join(", ")) : ""}</option>`).join("")}</select>
+    <div class="row"><div><label>Priority</label><select name="priority">${opts(["Urgent", "High", "Normal", "Low"], v.priority || "Normal")}</select></div>
+    <div><label>Status</label><select name="status">${opts(["Open", "Scheduled", "In Progress", "Done", "Cancelled"], v.status || "Open")}</select></div></div>
+    <label>Waits for (do these first)</label><select name="depends_on" multiple size="3">${(W ? W.jobs : []).filter((j) => j.id !== v.id && OPEN.includes(j.status)).map((j) => `<option value="${esc(j.id)}" ${(v.depends_on || []).includes(j.id) ? "selected" : ""}>${esc([j.place, j.subject].filter(Boolean).join(" — "))}</option>`).join("")}</select>
+    <div class="hint">Leave empty if it can start now.</div>
+    <label>Photo${v.id ? " (adds one more)" : " of the problem"}</label>
+    <div class="wphoto"><label class="pbtn" for="wPhotoIn">📷 Take / choose photo</label><input id="wPhotoIn" type="file" accept="image/*" capture="environment" class="hide"><img id="wPhotoPrev" alt=""></div>
+    <label>Details (optional)</label><textarea name="description">${esc(v.description || "")}</textarea>
+    <button class="save" type="submit">Save</button></form>`);
+  $("wPhotoIn").onchange = async () => { const f = $("wPhotoIn").files[0]; if (!f) return; const p = $("wPhotoPrev"); p.src = await shrink(f, 300, 0.6); p.style.display = "block"; };
+  $("wForm").onsubmit = async (ev) => {
+    ev.preventDefault();
+    const fd = Object.fromEntries(new FormData(ev.target).entries());
+    fd.depends_on = [...ev.target.depends_on.selectedOptions].map((x) => x.value).join(", ");
+    if (v.id) fd.id = v.id;
+    const f = $("wPhotoIn").files[0];
+    const btn = ev.target.querySelector(".save"); btn.disabled = true; btn.textContent = "Saving…";
+    try {
+      if (f) { fd.photo = await shrink(f, 1000, 0.72); fd.photo_thumb = await shrink(f, 140, 0.6); }
+      await call("saveJob", fd); toast("✓ Saved"); closeSheet(); loadWorks();
+    } catch (err) { toast(err.message, 1); btn.disabled = false; btn.textContent = "Save"; }
+  };
+}
+$("tab-today").addEventListener("click", async (e) => {
+  const t = e.target.closest("[data-wform],[data-wedit],[data-jst],[data-addph],[data-wph],[data-whist]"); if (!t) return;
+  if (t.dataset.wform) return workForm({ vendor_key: t.dataset.vk || "", place: t.dataset.pl || "" });
+  if (t.dataset.wedit) return workForm((W ? W.jobs : []).find((j) => j.id === t.dataset.wedit) || {});
+  if (t.dataset.addph) { wAddFor = t.dataset.addph; $("wAddPh").value = ""; $("wAddPh").click(); return; }
+  if (t.dataset.whist) {
+    const js = W.jobs.filter((j) => j.vendor_key === t.dataset.whist).sort((a, b) => String(b.completed_on || b.reported_on).localeCompare(String(a.completed_on || a.reported_on)));
+    return openSheet(`<h3>${esc(js[0] ? js[0].vendor_name : "")} — all works</h3>` + js.map((j) => `<div class="wrow"><b>${esc(j.subject)}</b><span class="pl">${esc(j.place)}</span>
+      <small style="display:block;color:var(--muted)">${esc(j.status)}${j.status === "Done" ? " " + dd(j.completed_on) : " · reported " + dd(j.reported_on)}${j.work_done ? " — " + esc(String(j.work_done).split("\n").pop()) : ""}</small></div>`).join(""));
+  }
+  if (t.dataset.wph) {
+    openSheet('<div class="empty">Loading photo…</div>');
+    try { const src = await call("workPhoto", t.dataset.job, t.dataset.wph); openSheet(`<img src="${esc(src)}" style="width:100%;border-radius:12px;margin-top:30px" alt="">`); } catch (err) { openSheet(`<div class="empty">${esc(err.message)}</div>`); }
+    return;
+  }
+  if (t.dataset.jst) {
+    t.disabled = true;
+    try { await call("setJobStatus", t.dataset.id, t.dataset.jst, ""); toast(t.dataset.jst === "Done" ? "✓ Marked done" : "✓ Updated"); loadWorks(); }
+    catch (err) { toast(err.message, 1); t.disabled = false; }
+  }
+});
+$("wAddPh").onchange = async () => {
+  const f = $("wAddPh").files[0]; if (!f || !wAddFor) return;
+  toast("Uploading photo…");
+  try { await call("addWorkPhoto", wAddFor, await shrink(f, 1000, 0.72), await shrink(f, 140, 0.6), ""); toast("✓ Photo added"); loadWorks(); }
+  catch (err) { toast(err.message, 1); }
+};
+
+refreshCount(); loadRegulars(); worksCount();
 setInterval(refreshCount, 60000);
 })();
 </script>
