@@ -18,8 +18,8 @@
 *{box-sizing:border-box}
 body{margin:0;font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink)}
 a{color:var(--acc)}
-header{position:sticky;top:0;z-index:5;background:var(--ink);color:#fff;padding:12px 16px 0}
-header h1{margin:0 0 8px;font-size:18px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+header{position:sticky;top:0;z-index:5;background:var(--ink);color:#fff;padding:calc(10px + env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 0 max(16px, env(safe-area-inset-left))}
+header h1{margin:0 0 8px;font-size:18px;display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:2px 8px}
 header h1 small{font-weight:400;font-size:12px;opacity:.85}
 header h1 small a{color:#fff}
 nav{display:flex;overflow-x:auto;gap:2px;scrollbar-width:none}
@@ -131,7 +131,7 @@ body.nomoney .money,body.nomoney .sheet,body.nomoney #sheetLink,body.nomoney .bi
   <div id="recentList"></div>
 </main>
 
-<main id="tab-amc" class="hide"><div id="amcList"></div><div class="add"><a href="#" data-form="amc">+ Add AMC / warranty</a><a href="#" class="sheet">All AMCs (sheet)</a></div></main>
+<main id="tab-amc" class="hide"><div id="amcList"></div><div class="add"><a href="#" data-form="amc">+ Add AMC / warranty</a><a href="#" id="calSync" class="money">📅 Sync calendar</a><a href="#" class="sheet">All AMCs (sheet)</a></div></main>
 <main id="tab-mail" class="hide"><div class="muted" style="margin:4px 0 8px">Found in 98blisshome's Gmail: AMC, warranty, service and bill emails. Checked every hour.</div><div id="mailList"></div></main>
 <main id="tab-staff" class="hide">
   <h2>Gate team — names tapped at check-in / check-out</h2><div id="teamList"></div>
@@ -272,12 +272,13 @@ async function loadWho() {
 
 // ---- one click handler for the whole page
 document.body.addEventListener("click", async (e) => {
-  const t = e.target.closest("[data-team],[data-bill],[data-hist],[data-form],[data-edit],[data-renew],[data-ask],[data-mail],[data-staff],[data-copy],[data-cact],[data-cf],[data-unrepl],[data-cur],[data-wv],[data-ws],[data-jst],[data-wph],[data-addph],.sheet,.close,#sheet,#docLink,#cRun");
+  const t = e.target.closest("[data-team],[data-bill],[data-hist],[data-form],[data-edit],[data-renew],[data-ask],[data-mail],[data-staff],[data-copy],[data-cact],[data-cf],[data-unrepl],[data-cur],[data-wv],[data-ws],[data-jst],[data-wph],[data-addph],.sheet,.close,#sheet,#docLink,#cRun,#calSync");
   if (!t) return;
   if (t.tagName === "A" && !t.href.startsWith("tel:") && !t.href.startsWith("mailto:") && !t.href.includes("wa.me") && t.target !== "_blank") e.preventDefault();
   if (t.id === "sheet" && e.target !== t) return;
   if (t.classList.contains("close") || t.id === "sheet") return closeSheet();
   if (t.classList.contains("sheet")) return window.open(data ? data.sheet_url : "#", "_blank");
+  if (t.id === "calSync") { t.textContent = "📅 Syncing…"; try { const r = await call("syncCalendar"); if (r.off) toast("Calendar is off in Settings", 1); else { toast(`✓ Calendar: ${r.created} new, ${r.updated} changed, ${r.removed} removed${r.waiting ? ", " + r.waiting + " next run" : ""}`); if (!$("calOpen")) t.insertAdjacentHTML("afterend", `<a id="calOpen" href="${esc(r.url)}" target="_blank">Open Google Calendar →</a>`); } } catch (err) { toast(err.message, 1); } t.textContent = "📅 Sync calendar"; return; }
   if (t.id === "cRun") { t.textContent = "Checking…"; try { await call("runContactsCheck"); toast("✓ Contacts checked"); loadContacts(); } catch (err) { toast(err.message, 1); } t.textContent = "↻ Check now"; return; }
   if (t.dataset.bill) return openBill(JSON.parse(t.dataset.bill));
   if (t.dataset.team) { try { await call("setTeamActive", t.dataset.id, t.dataset.team === "on"); toast("✓ Updated"); loadDash(); } catch (err) { toast(err.message, 1); } return; }
