@@ -29,6 +29,7 @@ nav button{min-width:0;white-space:nowrap}
 .ans .q{color:var(--muted);font-size:12px;margin-bottom:6px}.ans p{margin:6px 0}
 .ans .acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}.ans .acts a{background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px 12px;color:var(--ink);text-decoration:none;font-size:14px}
 .ans .acts a.call{background:var(--ok);color:#fff;border-color:var(--ok)}
+.who .chosen{display:flex;align-items:center;gap:8px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:10px;padding:10px 12px;margin-bottom:6px;font-weight:600}.who .chosen button{margin-left:auto;border:0;background:#fff;border-radius:999px;width:30px;height:30px;font-size:16px}.who .wl{display:flex;flex-direction:column;gap:4px;margin-top:6px;max-height:260px;overflow:auto}.who .wl button{text-align:left;border:1px solid #e5e7eb;background:#fff;border-radius:10px;padding:10px 12px;font-size:15px;color:inherit}.who .wl small{color:#6b7280;display:block;font-size:12.5px}.who .wnewp{margin-top:8px;border:1px dashed #94a3b8;background:#f8fafc;border-radius:10px;padding:9px 12px;font-size:15px;font-weight:600;color:#1d4ed8;width:100%}.who .npadd{width:100%;margin-top:8px;border:0;border-radius:10px;background:#1d4ed8;color:#fff;font-weight:700;padding:11px;font-size:15px}.who .np{background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px;padding:8px 10px}.who .np input,.who .np select{margin-top:6px}.who .np{display:none;margin-top:6px}.who.adding .np{display:block}.who .whint{font-size:12px;color:#6b7280;margin-top:4px}
 .alld{display:block;text-align:center;margin:14px 0;padding:12px;border-radius:12px;background:#fff;border:1px solid var(--line);color:var(--acc);font-weight:600;text-decoration:none}
 nav{display:flex;gap:4px}
 nav button{flex:1;background:transparent;border:0;color:#cbd5e1;padding:10px 4px 12px;font-size:15px;border-bottom:3px solid transparent}
@@ -616,13 +617,60 @@ function renderWorks() {
     return `<div class="wgrp">${head}${rows}${add}</div>`;
   }).join("");
 }
-function workForm(v) {
+// ---- "Who does it" picker (30 Sep 2026): asks the server, so it works even before the works list has loaded
+const whoPicker = (key, name) => `<div class="who" data-who>
+  <input type="hidden" name="vendor_key" value="${esc(key || "")}"><input type="hidden" name="vendor_name" value="${esc(name || "")}">
+  <input type="hidden" name="vendor_company" value=""><input type="hidden" name="vendor_trade" value="">
+  <div class="chosen"${key ? "" : ' style="display:none"'}><span class="cn">${esc(name || key || "")}</span><button type="button" class="wclr" aria-label="Clear">×</button></div>
+  <input class="wq" type="search" placeholder="Type name, trade (plumber, electrician…) or mobile" autocomplete="off"${key ? ' style="display:none"' : ""}>
+  <div class="wl"></div>
+  <button type="button" class="wnewp">＋ Add new person</button>
+  <div class="np"><div class="row"><div><input data-np="name" placeholder="Name *"></div><div><input data-np="mobile" type="tel" inputmode="numeric" placeholder="Mobile (10 digits) *"></div></div>
+  <div class="row"><div><select data-np="trade"><option value="">Trade…</option>${BOOT.trades.map((t) => `<option>${esc(t)}</option>`).join("")}</select></div><div><input data-np="company" placeholder="Shop / company"></div></div>
+  <button type="button" class="npadd">Add &amp; choose</button><div class="whint">Goes into the service list and the house Google Contacts. You stay on this screen.</div></div></div>`;
+function initWho(box) {
+  if (!box) return;
+  const q = box.querySelector(".wq"), list = box.querySelector(".wl"), ch = box.querySelector(".chosen");
+  const set = (f, v) => (box.querySelector(`[name=${f}]`).value = v || "");
+  let seq = 0, tm;
+  const show = async (text) => {
+    const mine = ++seq; list.innerHTML = '<small style="padding:6px">Looking…</small>';
+    try {
+      const r = await call("whoList", text);
+      if (mine !== seq) return;
+      list.innerHTML = r.length ? r.map((p) => `<button type="button" data-k="${esc(p.key)}" data-n="${esc(p.name)}" data-c="${esc(p.company)}" data-t="${esc(p.trade)}">${p.current ? "⭐ " : ""}<b>${esc(p.name)}</b><small>${esc([p.trade, p.company, p.key.replace(/(\d{5})(\d{5})/, "$1 $2")].filter(Boolean).join(" · "))}${p.src === "contacts" ? " · from house contacts" : ""}</small></button>`).join("")
+        : `<small style="padding:6px">Nobody found for “${esc(text)}”. Use + New person.</small>`;
+    } catch (e) { if (mine === seq) list.innerHTML = `<small style="padding:6px;color:#b00020">${esc(e.message)}</small>`; }
+  };
+  const pick = (k, n, c, t) => { set("vendor_key", k); set("vendor_name", n); set("vendor_company", c); set("vendor_trade", t);
+    box.classList.remove("adding"); ch.querySelector(".cn").textContent = n || k; ch.style.display = ""; q.style.display = "none"; q.value = ""; list.innerHTML = ""; };
+  q.addEventListener("focus", () => { if (!q.value.trim()) show(""); });
+  q.addEventListener("input", () => { clearTimeout(tm); tm = setTimeout(() => show(q.value.trim()), 250); });
+  list.addEventListener("click", (e) => { const b = e.target.closest("button[data-k]"); if (b) pick(b.dataset.k, b.dataset.n, b.dataset.c, b.dataset.t); });
+  ch.querySelector(".wclr").addEventListener("click", () => { ["vendor_key", "vendor_name", "vendor_company", "vendor_trade"].forEach((f) => set(f, "")); ch.style.display = "none"; q.style.display = ""; q.focus(); });
+  const np = (f) => box.querySelector(`[data-np=${f}]`);
+  box.querySelector(".wnewp").addEventListener("click", (e) => { e.preventDefault(); box.classList.toggle("adding");
+    if (box.classList.contains("adding")) { const t = q.value.trim(); if (/^[\d\s+]{6,}$/.test(t)) np("mobile").value = t; else if (t) np("name").value = t; list.innerHTML = ""; np(np("name").value ? "mobile" : "name").focus(); } });
+  box.querySelector(".npadd").addEventListener("click", async (e) => {
+    const b = e.currentTarget; b.disabled = true; b.textContent = "Adding…";
+    try {
+      const r = await call("quickAddPerson", { name: np("name").value, mobile: np("mobile").value, trade: np("trade").value, company: np("company").value });
+      pick(r.key, r.name, r.company, r.trade); ["name", "mobile", "company"].forEach((f) => (np(f).value = "")); np("trade").value = "";
+      toast(r.existed ? `Already in the list as ${r.name} — chosen` : `✓ ${r.name} added and chosen`);
+    } catch (err) { toast(err.message, 1); }
+    b.disabled = false; b.textContent = "Add & choose";
+  });
+  if (!box.querySelector("[name=vendor_key]").value && !q.value) list.innerHTML = "";
+}
+const vendorName = (key, list) => { const p = (list || []).find((x) => x.key === key); return p ? p.name : ""; };
+async function workForm(v) {
+  if (!W) { openSheet('<div class="empty">Loading…</div>'); try { W = await call("worksView"); } catch (e) { } }   // never open the form without its lists
   const vendors = W ? W.vendors || [] : [];
   openSheet(`<h3>${v.id ? "Edit work" : "New work"}</h3><form id="wForm">
     <label>Where (place / room)</label><input name="place" value="${esc(v.place || "")}" list="wPlaces" placeholder="e.g. Manju bathroom, Mother room" autocomplete="off">
     <datalist id="wPlaces">${(W ? W.places : []).map((p) => `<option>${esc(p)}</option>`).join("")}</datalist>
     <label>What is the work?</label><input name="subject" value="${esc(v.subject || "")}" placeholder="e.g. Health faucet leaking" required>
-    <label>Who does it</label><select name="vendor_key"><option value="">— not decided yet —</option>${vendors.map((p) => `<option value="${esc(p.key)}" ${p.key === v.vendor_key ? "selected" : ""}>${p.current ? "⭐ " : ""}${esc(p.name)}${p.trades || p.company ? " — " + esc([p.trades, p.company].filter(Boolean).join(", ")) : ""}</option>`).join("")}</select>
+    <label>Who does it</label>${whoPicker(v.vendor_key, v.vendor_name || vendorName(v.vendor_key, vendors))}
     <div class="row"><div><label>Priority</label><select name="priority">${opts(["Urgent", "High", "Normal", "Low"], v.priority || "Normal")}</select></div>
     <div><label>Status</label><select name="status">${opts(["Open", "Scheduled", "In Progress", "Done", "Cancelled"], v.status || "Open")}</select></div></div>
     <label>Waits for (do these first)</label><select name="depends_on" multiple size="3">${(W ? W.jobs : []).filter((j) => j.id !== v.id && OPEN.includes(j.status)).map((j) => `<option value="${esc(j.id)}" ${(v.depends_on || []).includes(j.id) ? "selected" : ""}>${esc([j.place, j.subject].filter(Boolean).join(" — "))}</option>`).join("")}</select>
@@ -631,6 +679,7 @@ function workForm(v) {
     <div class="wphoto"><label class="pbtn" for="wPhotoIn">📷 Add photos (camera or gallery — several at once)</label><input id="wPhotoIn" type="file" accept="image/*" multiple class="hide"></div><div class="thumbs" id="wPhotoPrevs"></div>
     <label>Details (optional)</label><textarea name="description">${esc(v.description || "")}</textarea>
     <button class="save" type="submit">Save</button></form>`);
+  initWho(document.querySelector("#wForm [data-who]"));
   $("wPhotoIn").onchange = async () => { const box = $("wPhotoPrevs"); box.innerHTML = ""; for (const f of [...$("wPhotoIn").files].slice(0, 8)) { const i = document.createElement("img"); i.src = await shrink(f, 200, 0.6); box.appendChild(i); } };
   $("wForm").onsubmit = async (ev) => {
     ev.preventDefault();
