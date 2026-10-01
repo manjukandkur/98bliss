@@ -144,12 +144,12 @@ textarea{min-height:70px;font-size:16px}
 
   <div id="f-regulars" class="hide"><label>Regulars — one tap</label><div class="chips" id="regulars"></div></div>
 
-  <label>Mobile number</label>
+  <label id="l-mobile">Mobile number</label>
   <input id="mobile" class="big" type="tel" inputmode="numeric" autocomplete="off" placeholder="10-digit mobile">
   <div id="suggM" class="sugg hide"></div>
   <div id="known" class="known hide"></div>
 
-  <label>Name</label>
+  <label id="l-name">Name</label>
   <input id="person_name" autocomplete="off" placeholder="Type a name, shop or trade to find a repeat person">
   <div id="suggN" class="sugg hide"></div>
 
@@ -230,7 +230,9 @@ const lastCopy = (name, v) => { try { const key = "bliss98_c_" + String(BOOT.k).
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const COURIERS = BOOT.couriers;
 $("house").textContent = BOOT.house;
-const OWNER_URL = `${BOOT.url}?k=${BOOT.k}&p=owner`;
+// 1 Oct 2026 "if i click on other tab it momentarily goes to gate and comes back": in the phone app go STRAIGHT to owner.html
+// (the gate address used to load first and then forward). The Google version has one address, so it keeps ?p=owner.
+const OWNER_URL = window.appCall ? `${BOOT.url}owner.html?k=${BOOT.k}&p=owner` : `${BOOT.url}?k=${BOOT.k}&p=owner`;
 $("who").innerHTML = esc(BOOT.name + (BOOT.staff_role && BOOT.staff_role !== BOOT.name ? " · " + BOOT.staff_role : ""));
 // 1 Oct 2026: "gate and owner let everything be in 1 row or tab else it is very confusing" - ONE tab row for both pages.
 // The office tabs (Who to call ... Staff) open the owner screen on that tab; it shows the same row back.
@@ -320,6 +322,10 @@ function setType(t) {
   $("l-company").textContent = t === "Maintenance" ? "Company / shop" : "Company";
   $("f-company").classList.toggle("hide", t === "Delivery");
   $("l-meeting").textContent = t === "Delivery" ? "Parcel for" : t === "Maintenance" ? "Called by" : "Meeting / for whom";
+  // 1 Oct 2026: delivery people stay at the gate - number and name optional, parcel logged as received (not "Inside")
+  $("l-mobile").textContent = t === "Delivery" ? "Mobile (optional — they stay at the gate)" : "Mobile number";
+  $("l-name").textContent = t === "Delivery" ? "Name (optional)" : "Name";
+  $("save").textContent = t === "Delivery" ? "📦 Log parcel" : "Check in";
   if (t === "Maintenance") loadJobs();
 }
 $("courier").innerHTML = COURIERS.map((c) => `<button type="button">${c}</button>`).join("");
@@ -395,8 +401,10 @@ $("person_name").addEventListener("input", () => {
 });
 
 // ---- mobile lookup: a known person fills themselves in
+// +91 / 91 / a leading 0 are dropped, so "+91 98450 12345" and "098450 12345" both work (1 Oct 2026)
+function mobDigits(v) { const s = String(v || "").trim(); let x = s.replace(/\D/g, ""); if (/^\+\s*91/.test(s) || (x.length > 10 && x.startsWith("91"))) x = x.slice(2); else if (x.length === 11 && x.startsWith("0")) x = x.slice(1); return x.slice(0, 10); }
 $("mobile").addEventListener("input", async () => {
-  const d = $("mobile").value.replace(/\D/g, "");
+  const d = mobDigits($("mobile").value);
   if (d.length >= 4 && d.length < 10) askSugg("suggM", d); else { clearTimeout(suggTimer); suggSeq++; hideSugg(); }
   if (d.length < 10) { if (known) clearKnown(); return; }
   try {
@@ -483,10 +491,12 @@ function shrink(file, max, q) {
 
 // ---- save
 $("save").onclick = async () => {
-  const mobile = $("mobile").value.replace(/\D/g, "");
+  const mobile = mobDigits($("mobile").value);
   const name = $("person_name").value.trim();
-  if (mobile.length < 10) return toast("Enter the 10-digit mobile number", 1);
-  if (!name) return toast("Enter the name", 1);
+  const isDel = type === "Delivery";
+  if (!isDel && mobile.length < 10) return toast("Enter the 10-digit mobile number", 1);
+  if (isDel && mobile && mobile.length < 10) return toast("Mobile is optional for a delivery: leave it empty or enter all 10 digits", 1);
+  if (!isDel && !name) return toast("Enter the name", 1);
   if (type === "Maintenance" && !$("trade").value && !$("service_job").value) return toast("Choose the work type", 1);
   if (cameIn === "pick" && !$("cameAt").value) return toast("Pick the time they came in", 1);
   if (TEAM.length && !byName) { $("byBox").scrollIntoView({ block: "center" }); return toast("Tap your name first (who is entering this?)", 1); }
@@ -503,14 +513,14 @@ $("save").onclick = async () => {
     if (type === "Maintenance") Object.assign(data, { trade: $("trade").value, job_id: $("service_job").value });
     if (photoData) Object.assign(data, { photo: photoData, thumb: thumbData });
     await call("checkIn", data);
-    toast("✓ " + name + " checked in" + (byName ? " by " + byName : ""));
+    toast(isDel ? "📦 Parcel logged" + (courier ? " — " + courier : "") + (byName ? " by " + byName : "") : "✓ " + name + " checked in" + (byName ? " by " + byName : ""));
     byName = ""; showBy();   // next entry: the person taps their name again
     resetForm();
     refreshCount(); loadRegulars();
   } catch (e) {
     toast(e.message, 1);
   } finally {
-    $("save").disabled = false; $("save").textContent = "Check in";
+    $("save").disabled = false; $("save").textContent = type === "Delivery" ? "📦 Log parcel" : "Check in";
   }
 };
 function resetForm() {

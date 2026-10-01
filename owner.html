@@ -119,7 +119,7 @@ body.nomoney .money,body.nomoney .sheet,body.nomoney #sheetLink,body.nomoney .bi
 </main>
 
 <main id="tab-who" class="hide">
-  <input id="q" type="search" placeholder="Search: plumber, electrician, gate, a name, shop, number…" autocomplete="off">
+  <form class="ask" id="qForm"><input id="q" type="search" enterkeyhint="search" placeholder="Search: plumber, electrician, gate, a name, shop, number…" autocomplete="off"><button type="submit">🔍</button></form>
   <div class="chips" id="status"></div>
   <div class="chips" id="trades"><button class="on" data-t="">All</button></div>
   <div id="whoList"></div>
@@ -146,14 +146,14 @@ body.nomoney .money,body.nomoney .sheet,body.nomoney #sheetLink,body.nomoney .bi
 <main id="tab-contacts" class="hide">
   <div class="muted" id="cHead" style="margin:4px 0 8px"></div>
   <div class="stats" id="cStats"></div>
-  <input id="cq" type="search" placeholder="Search a name, number, company…" autocomplete="off" style="margin-top:10px">
+  <form class="ask" id="cqForm" style="margin-top:10px"><input id="cq" type="search" enterkeyhint="search" placeholder="Search a name, number, company…" autocomplete="off"><button type="submit">🔍</button></form>
   <div class="chips" id="cChips"></div>
   <div id="cList"></div>
   <div class="add"><a href="#" id="cRun">↻ Check now</a><a href="#" class="sheet">Register (sheet)</a></div>
 </main>
 <main id="tab-jobs" class="hide">
   <div class="add" style="margin-top:4px"><a href="#" data-form="job">+ New work</a><a href="#" class="sheet">All works (sheet)</a></div>
-  <input id="wq" placeholder="Search works: place, person, problem…" autocomplete="off" style="margin-top:8px">
+  <form class="ask" id="wqForm" style="margin-top:8px"><input id="wq" type="search" enterkeyhint="search" placeholder="Search works: place, person, problem…" autocomplete="off"><button type="submit">🔍</button></form>
   <div class="chips" id="wview"><button data-wv="person" class="on">By vendor</button><button data-wv="place">By place</button><button data-wv="all">All</button></div>
   <div class="chips" id="wstat"><button data-ws="pending" class="on">Pending</button><button data-ws="blocked">Waiting on other work</button><button data-ws="done">Done (all time)</button></div>
   <div id="wStats" class="muted"></div>
@@ -249,16 +249,37 @@ async function doAsk(q) {
 let trade = "", status = "", timer, whoSeq = 0;
 $("trades").onclick = (e) => {
   if (e.target.tagName !== "BUTTON") return;
-  trade = e.target.dataset.t;
+  trade = e.target.dataset.t; whoLast = null;
   [...$("trades").children].forEach((b) => b.classList.toggle("on", b === e.target));
   loadWho();
 };
-$("status").onclick = (e) => { const b = e.target.closest("button"); if (!b) return; status = b.dataset.s; loadWho(); };
-$("q").oninput = () => { clearTimeout(timer); timer = setTimeout(loadWho, 300); };
+$("status").onclick = (e) => { const b = e.target.closest("button"); if (!b) return; status = b.dataset.s; whoLast = null; loadWho(); };
+// 1 Oct 2026: "give a go or search button either return on keyboard or go should work" / "when I enter a name it should fetch
+// results right?" / "slight delay in searching" / "how does it handle +91 ?": the list on screen is filtered on the phone at
+// every letter (instant), Google's full answer follows; Go / Search / 🔍 searches at once and closes the keyboard; +91 and a
+// leading 0 are ignored in numbers.
+const qDigits = (q) => { const s = String(q || "").trim(); let x = s.replace(/\D/g, ""); if (/^\+\s*91/.test(s) || (x.length > 10 && x.startsWith("91"))) x = x.slice(2); else if (x.length === 11 && x.startsWith("0")) x = x.slice(1); return x; };
+let whoLast = null;
+const quickWho = () => {
+  if (!whoLast) return;
+  const q = $("q").value.trim().toLowerCase(), qd = qDigits(q), hasLetters = /[a-z]/.test(q);
+  if (!q) return renderWho(whoLast);
+  const rows = whoLast.rows.filter((x) => (hasLetters && [x.person_name, x.trades, x.company_name, x.notes, x.email].join(" ").toLowerCase().includes(q))
+    || (qd.length >= 3 && String(x.mobile || "").replace(/\D/g, "").includes(qd)));
+  renderWho({ counts: whoLast.counts, rows: rows }, true);
+};
+$("q").oninput = () => { quickWho(); clearTimeout(timer); timer = setTimeout(loadWho, 250); };
+$("qForm").onsubmit = (e) => { e.preventDefault(); clearTimeout(timer); $("q").blur(); loadWho(); };
 async function loadWho() {
   const mine = ++whoSeq; // a slower, older answer must never overwrite the newer list
-  const r = await call("whoToCall", trade, $("q").value.trim(), status);
+  const q = $("q").value.trim(), ck = "who_" + trade + "_" + status + "_" + q.toLowerCase();
+  if (!q) { const c = lastCopy(ck); if (c && !whoLast) { whoLast = c; renderWho(c, true); } }
+  const r = await call("whoToCall", trade, q, status);
   if (mine !== whoSeq) return;
+  if (!q) { whoLast = r; lastCopy(ck, r); }
+  renderWho(r);
+}
+function renderWho(r, quick) {
   const total = Object.values(r.counts).reduce((a, b) => a + b, 0);
   $("status").innerHTML = [["", "All " + total]].concat(["Active", "Recent", "Dormant", "Never came"].filter((x) => r.counts[x]).map((x) => [x, x + " " + r.counts[x]]))
     .map(([v, l]) => `<button data-s="${esc(v)}" class="${v === status ? "on" : ""}">${esc(l)}</button>`).join("");
@@ -268,7 +289,7 @@ async function loadWho() {
     return `<div class="card ${rp ? "old" : ""}">
       ${rp ? `<div class="repl">⛔ Replaced ${d(rp.on)}${rp.by_name ? ` by <b>${esc(rp.by_name)}</b> · ${esc(rp.by_mobile)} — call them instead` : " — no longer used"}${rp.note ? `<div style="font-weight:400">${esc(rp.note)}</div>` : ""}</div>` : ""}
       <div class="top"><div><b class="n">${esc(x.person_name || "(no name)")}</b>
-        <div class="muted">${esc([x.trades, x.company_name].filter(Boolean).join(" · "))}${x.source === "contacts" ? " · from your contacts" : ""}</div>
+        <div class="muted">${esc([x.trades, x.company_name].filter(Boolean).join(" · "))}${x.house_contact ? (x.trades || x.company_name ? " · " : "") + "📇 house contact" + (x.old ? " (old)" : "") : x.source === "contacts" ? " · from your contacts" : ""}</div>
         <div class="line"><b>${esc(x.mobile)}</b>${x.email ? " · " + esc(x.email) : ""}</div></div>
         <div style="text-align:right">${x.current ? '<span class="badge in">⭐ CURRENT</span> ' : ""}${x.inside ? '<span class="badge in">INSIDE NOW</span> ' : ""}${rp ? '<span class="badge bad">REPLACED</span>' : stBadge(x.status)}${x.rating ? ` <span class="badge ${bad ? "bad" : esc(x.rating)}">${esc(x.rating)}</span>` : ""}</div></div>
       ${x.recent_visits.length ? `<table class="vt">${x.recent_visits.map((v) => `<tr><td>${esc(when(v))}</td><td>${esc(v.work || "")}</td></tr>`).join("")}</table>` : `<div class="line muted">No gate visit recorded yet${x.last_mail ? " · last email " + d(x.last_mail) : ""}</div>`}
@@ -276,8 +297,8 @@ async function loadWho() {
       ${x.notes ? `<div class="line">📝 ${esc(x.notes)}</div>` : ""}
       ${rp && rp.by_mobile ? `<div class="acts"><a class="call" href="${telHref(rp.by_mobile)}">📞 Call ${esc(rp.by_name)}</a><button data-hist="${esc(rp.by_key)}">Their history</button></div>` : ""}
       ${acts(rp ? "" : x.mobile, x.key, rp ? "" : x.email)}
-      <div class="acts">${rp ? "" : `<button data-cur="${esc(x.key)}" data-on="${x.current ? "" : "1"}">${x.current ? "Remove ⭐ current" : "⭐ Make current"}</button>`}${rp ? `<button data-unrepl="${esc(x.key)}">Undo replaced</button>` : `<button data-form="replace" data-pre='${esc(JSON.stringify({ key: x.key, name: x.person_name, trades: x.trades }))}'>Replaced…</button>`}</div></div>`;
-  }).join("") : `<div class="empty">Nobody found${trade ? " for " + esc(trade) : ""}. As service people check in at the gate they appear here automatically.</div>`;
+      ${x.house_contact || quick ? "" : `<div class="acts">${rp ? "" : `<button data-cur="${esc(x.key)}" data-on="${x.current ? "" : "1"}">${x.current ? "Remove ⭐ current" : "⭐ Make current"}</button>`}${rp ? `<button data-unrepl="${esc(x.key)}">Undo replaced</button>` : `<button data-form="replace" data-pre='${esc(JSON.stringify({ key: x.key, name: x.person_name, trades: x.trades }))}'>Replaced…</button>`}</div>`}</div>`;
+  }).join("") : quick && $("q").value.trim() ? `<div class="empty">Searching all contacts…</div>` : `<div class="empty">Nobody found${trade ? " for " + esc(trade) : ""}. As service people check in at the gate they appear here automatically.</div>`;
 }
 
 // ---- one click handler for the whole page
@@ -305,8 +326,8 @@ document.body.addEventListener("click", async (e) => {
     try { await call("setJobStatus", t.dataset.id, t.dataset.jst, ""); toast(t.dataset.jst === "Done" ? "✓ Marked done" : "✓ " + t.dataset.jst); loadWorks(); loadDash(); } catch (err) { toast(err.message, 1); }
     return;
   }
-  if (t.dataset.cur) { try { await call("setCurrent", t.dataset.cur, !!t.dataset.on); toast(t.dataset.on ? "⭐ Marked current — everyone sees it" : "✓ No longer current"); loadWho(); } catch (err) { toast(err.message, 1); } return; }
-  if (t.dataset.unrepl) { try { await call("unreplacePerson", t.dataset.unrepl); toast("✓ Back in use"); loadWho(); } catch (err) { toast(err.message, 1); } return; }
+  if (t.dataset.cur) { try { await call("setCurrent", t.dataset.cur, !!t.dataset.on); toast(t.dataset.on ? "⭐ Marked current — everyone sees it" : "✓ No longer current"); whoLast = null; loadWho(); } catch (err) { toast(err.message, 1); } return; }
+  if (t.dataset.unrepl) { try { await call("unreplacePerson", t.dataset.unrepl); toast("✓ Back in use"); whoLast = null; loadWho(); } catch (err) { toast(err.message, 1); } return; }
   if (t.dataset.cf !== undefined) { cFilter = t.dataset.cf; return loadContacts(); }
   if (t.dataset.cact) {
     try { await call("contactAction", t.dataset.id, t.dataset.cact); toast(t.dataset.cact === "confirm" ? "✓ Confirmed — now Organised" : "✓ Updated"); loadContacts(); } catch (err) { toast(err.message, 1); }
@@ -552,7 +573,7 @@ async function openForm(kind, pre) {
           <input readonly value="${esc(r.link)}"><div class="acts"><button data-copy="${esc(r.link)}">Copy link</button><a class="wa" href="https:\/\/wa.me/?text=${encodeURIComponent(r.link)}">Send on WhatsApp</a></div>`);
         loadDash(); return;
       }
-      toast("✓ Saved"); closeSheet(); loadWho(); loadDash(); if (!$("tab-jobs").classList.contains("hide")) loadWorks();
+      toast("✓ Saved"); closeSheet(); whoLast = null; loadWho(); loadDash(); if (!$("tab-jobs").classList.contains("hide")) loadWorks();
     } catch (err) { toast(err.message, 1); btn.disabled = false; btn.textContent = "Save"; }
   };
 }
@@ -594,7 +615,8 @@ document.addEventListener("change", async (e) => {   // previews in the work for
   for (const f of [...e.target.files].slice(0, 8)) { const i = document.createElement("img"); i.src = await shrink(f, 200, 0.6); box.appendChild(i); }
 });
 const OPEN = ["Open", "Scheduled", "In Progress"], PRI = { Urgent: 0, High: 1, Normal: 2, Low: 3 };
-$("wq").oninput = () => { clearTimeout(wTimer); wTimer = setTimeout(renderWorks, 200); };
+$("wq").oninput = () => { clearTimeout(wTimer); wTimer = setTimeout(renderWorks, 120); };
+$("wqForm").onsubmit = (e) => { e.preventDefault(); clearTimeout(wTimer); $("wq").blur(); renderWorks(); };
 async function loadWorks() {
   const mine = ++wSeq;
   if (!W) { const c = lastCopy("works"); if (c) { W = c; renderWorks(); } }
@@ -642,7 +664,8 @@ function renderWorks() {
 // ---- dashboard data
 // ---- contacts check (owner only)
 let cFilter = "check", cTimer, cSeq = 0;
-$("cq").oninput = () => { clearTimeout(cTimer); cTimer = setTimeout(loadContacts, 300); };
+$("cq").oninput = () => { clearTimeout(cTimer); cTimer = setTimeout(loadContacts, 250); };
+$("cqForm").onsubmit = (e) => { e.preventDefault(); clearTimeout(cTimer); $("cq").blur(); loadContacts(); };
 const ERA_BADGE = { "Organised": "in", "New - to check": "Renewal", "Before": "Dormant" };
 async function loadContacts() {
   const mine = ++cSeq;
