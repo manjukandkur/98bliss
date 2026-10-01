@@ -258,6 +258,7 @@ const SUGG = ["Which plumber attended recently?", "Who repaired the gate recentl
 document.body.classList.toggle("nomoney", BOOT.money === false);
 $("sugg").innerHTML = SUGG.map((q) => `<button type="button" data-ask="${esc(q)}">${esc(q)}</button>`).join("");
 $("askForm").onsubmit = (e) => { e.preventDefault(); doAsk($("askQ").value); };
+$("askQ").addEventListener("focus", function () { const el = this; setTimeout(function () { try { el.setSelectionRange(0, el.value.length); } catch (x) { el.select(); } }, 0); });   /* tap the box = old question selected, typing replaces it */
 let askBusy = "", askAt = 0;
 async function doAsk(q) {
   q = String(q || "").trim(); if (!q) return;

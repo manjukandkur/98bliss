@@ -330,6 +330,7 @@ $("sugg").innerHTML = ["Which plumber attended recently?", "Who repaired the gat
 $("sugg").onclick = (e) => { const b = e.target.closest("button"); if (b) doAsk(b.dataset.ask); };
 $("answers").addEventListener("click", (e) => { const b = e.target.closest("[data-bill]"); if (b) { e.preventDefault(); openBill(JSON.parse(b.dataset.bill)); } });
 $("askForm").onsubmit = (e) => { e.preventDefault(); doAsk($("askQ").value); };
+$("askQ").addEventListener("focus", function () { const el = this; setTimeout(function () { try { el.setSelectionRange(0, el.value.length); } catch (x) { el.select(); } }, 0); });   /* tap the box = old question selected, typing replaces it */
 let askBusy = "", askAt = 0;
 async function doAsk(q) {
   q = String(q || "").trim(); if (!q) return;
