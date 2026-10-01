@@ -31,8 +31,9 @@ nav button{min-width:0;white-space:nowrap}
 .ans .acts a.call{background:var(--ok);color:#fff;border-color:var(--ok)}
 .who .chosen{display:flex;align-items:center;gap:8px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:10px;padding:10px 12px;margin-bottom:6px;font-weight:600}.who .chosen button{margin-left:auto;border:0;background:#fff;border-radius:999px;width:30px;height:30px;font-size:16px}.who .wl{display:flex;flex-direction:column;gap:4px;margin-top:6px;max-height:260px;overflow:auto}.who .wl button{text-align:left;border:1px solid #e5e7eb;background:#fff;border-radius:10px;padding:10px 12px;font-size:15px;color:inherit}.who .wl small{color:#6b7280;display:block;font-size:12.5px}.who .wl button.co{background:#eff6ff;border-color:#bfdbfe}.who .wnewp{margin-top:8px;border:1px dashed #94a3b8;background:#f8fafc;border-radius:10px;padding:9px 12px;font-size:15px;font-weight:600;color:#1d4ed8;width:100%}.who .npadd{width:100%;margin-top:8px;border:0;border-radius:10px;background:#1d4ed8;color:#fff;font-weight:700;padding:11px;font-size:15px}.who .np{background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px;padding:8px 10px}.who .np input,.who .np select{margin-top:6px}.who .np{display:none;margin-top:6px}.who.adding .np{display:block}.who .whint{font-size:12px;color:#6b7280;margin-top:4px}
 .alld{display:block;text-align:center;margin:14px 0;padding:12px;border-radius:12px;background:#fff;border:1px solid var(--line);color:var(--acc);font-weight:600;text-decoration:none}
-nav{display:flex;gap:4px}
-nav button{flex:1;background:transparent;border:0;color:#cbd5e1;padding:10px 4px 12px;font-size:15px;border-bottom:3px solid transparent}
+nav{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}nav::-webkit-scrollbar{display:none}
+nav button{flex:none;background:transparent;border:0;color:#cbd5e1;padding:10px 11px 12px;font-size:15px;border-bottom:3px solid transparent}
+nav button.hide{display:none}
 nav button.on{color:#fff;border-bottom-color:#fca311;font-weight:600}
 main{padding:14px 16px 90px;max-width:640px;margin:0 auto}
 .types{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
@@ -120,8 +121,16 @@ textarea{min-height:70px;font-size:16px}
   <nav>
     <button data-tab="new" class="on">New visitor</button>
     <button data-tab="inside">Inside <span id="nIn"></span></button>
-    <button data-tab="today">Today · Works</button>
+    <button data-tab="today">Today</button>
     <button data-tab="ask" id="askTab" class="hide">🔎 Ask</button>
+    <button data-go="who" class="hide xgo">Who to call</button>
+    <button data-go="now" class="hide xgo">Now</button>
+    <button data-go="jobs" class="hide xgo">Works</button>
+    <button data-go="amc" class="hide xgo">AMC</button>
+    <button data-go="mail" class="hide xgo">Mail</button>
+    <button data-go="money" class="hide xgo gom">Money</button>
+    <button data-go="contacts" class="hide xgo goa">Contacts</button>
+    <button data-go="staff" class="hide xgo goa">Staff</button>
   </nav>
 </header>
 <div id="toast"></div>
@@ -219,8 +228,15 @@ const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":
 const COURIERS = BOOT.couriers;
 $("house").textContent = BOOT.house;
 const OWNER_URL = `${BOOT.url}?k=${BOOT.k}&p=owner`;
-$("who").innerHTML = esc(BOOT.name + (BOOT.staff_role && BOOT.staff_role !== BOOT.name ? " · " + BOOT.staff_role : "")) +
-  (BOOT.role === "owner" || BOOT.role === "manager" || BOOT.full ? ` · <a href="${OWNER_URL}">${BOOT.role === "owner" || BOOT.role === "manager" ? "Owner page" : "All details"}</a>` : "");
+$("who").innerHTML = esc(BOOT.name + (BOOT.staff_role && BOOT.staff_role !== BOOT.name ? " · " + BOOT.staff_role : ""));
+// 1 Oct 2026: "gate and owner let everything be in 1 row or tab else it is very confusing" - ONE tab row for both pages.
+// The office tabs (Who to call ... Staff) open the owner screen on that tab; it shows the same row back.
+const ADMIN_ = BOOT.role === "owner" || BOOT.role === "manager";
+document.querySelectorAll("nav button[data-go]").forEach((b) => {
+  const ok = BOOT.full && (!b.classList.contains("gom") || BOOT.money !== false) && (!b.classList.contains("goa") || ADMIN_);
+  b.classList.toggle("hide", !ok);
+  b.onclick = () => { location.href = OWNER_URL + "#t=" + b.dataset.go; };
+});
 // 29 Sep 2026: "Better give ask in the main menu it is fantastic" - Ask is a main tab for every link that may see details
 if (BOOT.full) { $("askTab").classList.remove("hide"); $("allDetails").href = OWNER_URL; }
 $("whoHint").textContent = "Entered by " + BOOT.name + (BOOT.staff_role && BOOT.staff_role !== BOOT.name ? " (" + BOOT.staff_role + ")" : "");
@@ -253,9 +269,10 @@ function since(s) {
 const istLocal = (ms) => new Date(ms + 5.5 * 3600e3).toISOString().slice(0, 16);
 
 // ---- tabs
-document.querySelectorAll("nav button").forEach((b) => b.onclick = () => showTab(b.dataset.tab));
+document.querySelectorAll("nav button[data-tab]").forEach((b) => b.onclick = () => showTab(b.dataset.tab));
 function showTab(t) {
   document.querySelectorAll("nav button").forEach((b) => b.classList.toggle("on", b.dataset.tab === t));
+  { const on = document.querySelector("nav button.on"); if (on && on.scrollIntoView) on.scrollIntoView({ block: "nearest", inline: "center" }); }
   ["new", "inside", "today", "ask"].forEach((x) => $("tab-" + x).classList.toggle("hide", x !== t));
   if (t === "ask") setTimeout(() => $("askQ").focus(), 50);
   if (t === "inside") loadInside();
@@ -791,6 +808,7 @@ $("wAddPh").onchange = async () => {
 };
 
 refreshCount(); loadRegulars(); worksCount();
+{ const m = location.hash.match(/t=(\w+)/); if (m && ["new", "inside", "today", "ask"].indexOf(m[1]) >= 0 && !(m[1] === "ask" && !BOOT.full)) showTab(m[1]); }
 setInterval(refreshCount, 60000);
 })();
 </script>

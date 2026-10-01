@@ -24,7 +24,7 @@
   var base = location.href.replace(/[?#].*$/, "").replace(/[^/]*$/, "");
   var here = /owner\.html$/.test(location.pathname) ? "owner" : "gate";
   api("boot", k, [], q.get("p") || (here === "owner" ? "owner" : "")).then(function (b) {
-    if (b.page !== here) { location.replace(base + (b.page === "owner" ? "owner.html" : "") + "?k=" + encodeURIComponent(k) + (b.page === "owner" ? "&p=owner" : "")); return; }
+    if (b.page !== here) { location.replace(base + (b.page === "owner" ? "owner.html" : "") + "?k=" + encodeURIComponent(k) + (b.page === "owner" ? "&p=owner" : "") + location.hash); return; }
     b.url = base; // links inside the screens ("Owner page", "Gate") stay inside the app
     window.BOOT = b;
     var run = function () {

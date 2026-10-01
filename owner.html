@@ -23,7 +23,7 @@ header h1{margin:0 0 8px;font-size:18px;display:flex;flex-wrap:wrap;justify-cont
 header h1 small{font-weight:400;font-size:12px;opacity:.85}
 header h1 small a{color:#fff}
 nav{display:flex;overflow-x:auto;gap:2px;scrollbar-width:none}
-nav button{flex:none;background:transparent;border:0;color:#cbd5e1;padding:9px 12px 11px;font-size:14px;border-bottom:3px solid transparent;white-space:nowrap}
+nav button{flex:none;background:transparent;border:0;color:#cbd5e1;padding:10px 11px 12px;font-size:15px;border-bottom:3px solid transparent;white-space:nowrap}
 nav button.on{color:#fff;border-bottom-color:#fca311;font-weight:600}
 main{padding:14px 16px 40px;max-width:760px;margin:0 auto}
 input,select{width:100%;padding:11px 12px;border:1px solid #cbd5e1;border-radius:10px;font-size:16px;background:#fff}
@@ -95,14 +95,17 @@ body.nomoney .money,body.nomoney .sheet,body.nomoney #sheetLink,body.nomoney .bi
 </head>
 <body>
 <header>
-  <h1><span id="house"></span> <small><span id="me"></span> · <a id="gateLink" href="#">Gate</a> · <a id="sheetLink" href="#">Sheet</a></small></h1>
+  <h1><span id="house"></span> <small><span id="me"></span> · <a id="gateLink" href="#" class="hide">Gate</a><a id="sheetLink" href="#">Sheet</a></small></h1>
   <nav>
-    <button data-tab="ask" class="on">Ask</button>
+    <button data-go="new">New visitor</button>
+    <button data-go="inside">Inside</button>
+    <button data-go="today">Today</button>
+    <button data-tab="ask" class="on">🔎 Ask</button>
     <button data-tab="who">Who to call</button>
     <button data-tab="now">Now</button>
+    <button data-tab="jobs">Works</button>
     <button data-tab="amc">AMC</button>
     <button data-tab="mail">Mail <span id="nMail"></span></button>
-    <button data-tab="jobs">Works</button>
     <button data-tab="money" class="money">Money</button>
     <button data-tab="contacts" id="contactsTab" class="hide">Contacts</button>
     <button data-tab="staff" id="staffTab" class="hide">Staff</button>
@@ -208,9 +211,12 @@ let data = null;
 
 // tabs
 const TABS = ["ask", "who", "now", "amc", "mail", "jobs", "money", "contacts", "staff"];
-document.querySelectorAll("nav button").forEach((b) => b.onclick = () => showTab(b.dataset.tab));
+document.querySelectorAll("nav button[data-tab]").forEach((b) => b.onclick = () => showTab(b.dataset.tab));
+// 1 Oct 2026: one tab row - the visitor tabs open the gate screen on that tab
+document.querySelectorAll("nav button[data-go]").forEach((b) => b.onclick = () => { location.href = BOOT.url + "?k=" + BOOT.k + "&p=gate#t=" + b.dataset.go; });
 function showTab(t) {
   document.querySelectorAll("nav button").forEach((x) => x.classList.toggle("on", x.dataset.tab === t));
+  { const on = document.querySelector("nav button.on"); if (on && on.scrollIntoView) on.scrollIntoView({ block: "nearest", inline: "center" }); }
   TABS.forEach((x) => $("tab-" + x).classList.toggle("hide", x !== t));
   if (t === "who") loadWho();
   if (t === "contacts") loadContacts();
@@ -756,6 +762,7 @@ $("gateLink").href = BOOT.url + "?k=" + BOOT.k + "&p=gate";
 $("sheetLink").onclick = (e) => { e.preventDefault(); if (data) window.open(data.sheet_url, "_blank"); };
 $("trades").innerHTML += BOOT.trades.map((t) => `<button data-t="${esc(t)}">${esc(t)}</button>`).join("");
 loadDash();
+{ const m = location.hash.match(/t=(\w+)/); if (m && TABS.indexOf(m[1]) >= 0) showTab(m[1]); }
 })();
 </script>
 </body>
