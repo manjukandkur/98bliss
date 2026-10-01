@@ -113,6 +113,8 @@ textarea{min-height:70px;font-size:16px}
 .wphoto{display:flex;gap:10px;align-items:center}.wphoto label.pbtn{margin:0;flex:1;text-align:center;padding:12px;border:2px dashed #94a3b8;border-radius:12px;color:var(--ink);font-size:15px}
 .wphoto img{width:60px;height:60px;object-fit:cover;border-radius:10px;display:none}
 .callbtn{display:inline-block;margin:4px 0 2px;padding:6px 14px;border-radius:999px;background:#dcfce7;color:#166534;font-weight:700;font-size:14px;text-decoration:none}
+.rpt{display:flex!important;align-items:center;gap:8px;margin-top:12px;font-weight:600}.rpt input{width:22px;height:22px;margin:0}.rptBox{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:8px 10px;margin-top:6px}.rptBox input[type=number]{margin-top:8px}.rptTag{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:999px;background:#ecfeff;color:#155e75;font-size:12px;font-weight:600}
+.billbtn{background:#fff7ed;border:1px solid #fdba74;color:#9a3412;border-radius:10px;padding:8px 10px;font-size:14px;margin:4px 4px 0 0}
 </style>
 </head>
 <body>
@@ -227,7 +229,44 @@ const $ = (id) => document.getElementById(id);
 // 1 Oct 2026 "slight lag": each list shows its last-seen copy at once, then the fresh one from Google replaces it.
 const lastCopy = (name, v) => { try { const key = "bliss98_c_" + String(BOOT.k).slice(-12) + "_" + name;
   if (v === undefined) return JSON.parse(localStorage.getItem(key) || "null"); localStorage.setItem(key, JSON.stringify(v)); } catch (e) { return null; } };
+const billBtn = (b, label) => b ? `<button class="billbtn" data-bill='${esc(JSON.stringify({ thread: b.thread, name: b.name }))}'>📎 ${esc(label || "Bill")}</button>` : "";
+async function openBill(b) {
+  const w = window.open("", "_blank");
+  if (w) w.document.write("<p style='font:16px sans-serif;padding:20px'>Opening the document…</p>");
+  try {
+    const f = await call("billFile", b.thread, b.name);
+    const bytes = Uint8Array.from(atob(f.data), (c) => c.charCodeAt(0));
+    const url = URL.createObjectURL(new Blob([bytes], { type: f.type }));
+    if (w) w.location.href = url; else { const a = document.createElement("a"); a.href = url; a.target = "_blank"; a.download = f.name; a.click(); }
+  } catch (err) { if (w) w.close(); toast(err.message, 1); }
+}
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+// ---- 🔁 periodic works (1 Oct 2026): "an option to select periodical ... 1 month, 2 months or enter number of days ... if checked
+// only, or else it is understood it is one time" (purifiers every 3-4 months, softener / DG batteries every 6 months...)
+const RPT = [[30, "1 month"], [61, "2 months"], [91, "3 months"], [122, "4 months"], [182, "6 months"], [365, "1 year"]];
+const repeatBlock = (v, withDate) => `<label class="rpt"><input type="checkbox" data-rpt ${v.repeat_days ? "checked" : ""}> 🔁 Periodical — it repeats</label>
+  <div class="rptBox ${v.repeat_days ? "" : "hide"}"><div class="chips">${RPT.map(([n, l]) => `<button type="button" data-rd="${n}" class="${Number(v.repeat_days) === n ? "on" : ""}">${l}</button>`).join("")}</div>
+  <input name="repeat_days" type="number" inputmode="numeric" min="1" max="3650" placeholder="or type the number of days, e.g. 100" value="${esc(v.repeat_days || "")}">
+  ${withDate ? `<label>Next due on</label><input type="date" name="scheduled_on" value="${esc(v.scheduled_on || "")}">` : ""}
+  <div class="hint muted" style="font-size:12px">When it is marked done, the next one is made by itself with its due date and goes on the 98 Bliss House calendar as a reminder.</div></div>`;
+function initRepeat(form) {
+  const cb = form.querySelector("[data-rpt]"); if (!cb) return;
+  const box = form.querySelector(".rptBox"), inp = form.querySelector("[name=repeat_days]");
+  const mark = () => box.querySelectorAll("[data-rd]").forEach((b) => b.classList.toggle("on", b.dataset.rd === String(inp.value)));
+  cb.onchange = () => { box.classList.toggle("hide", !cb.checked); if (!cb.checked) inp.value = ""; mark(); };
+  box.querySelectorAll("[data-rd]").forEach((b) => b.onclick = () => { inp.value = b.dataset.rd; mark(); });
+  inp.oninput = mark;
+}
+/** Check before saving: unticked = one-time work; ticked needs how often. Returns an error text or "". */
+function repeatCheck(form, fd) {
+  const cb = form.querySelector("[data-rpt]"); if (!cb) return "";
+  if (!cb.checked) { fd.repeat_days = ""; return ""; }
+  if (!(Number(fd.repeat_days) >= 1)) return "Periodical: choose how often (1 month, 3 months…) or type the days";
+  return "";
+}
+const dueTxt = (ymd) => { try { return new Date(ymd + "T00:00:00+05:30").toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kolkata" }); } catch (e) { return ymd; } };
+const rptLabel = (j) => j.repeat_days ? `<span class="rptTag">🔁 every ${esc(j.repeat_label || j.repeat_days + " days")}${j.scheduled_on && j.status !== "Done" ? " · due " + esc(dueTxt(j.scheduled_on)) : ""}</span>` : "";
+const doneToast = (r, extra) => "✓ Marked done" + (extra || "") + (r && r.next ? " — next one made (on the calendar)" : "");
 const COURIERS = BOOT.couriers;
 $("house").textContent = BOOT.house;
 // 1 Oct 2026 "if i click on other tab it momentarily goes to gate and comes back": in the phone app go STRAIGHT to owner.html
@@ -285,13 +324,18 @@ function showTab(t) {
 }
 // ---- 🔎 Ask (same answers as the owner page; no money on staff links - the server decides)
 const telHref = (m) => { const x = String(m || "").replace(/\D/g, ""); return x.length === 10 ? "tel:+91" + x : x.length > 10 && x.startsWith("91") ? "tel:+" + x : "tel:" + x; };
-const telLinks = (html) => String(html).replace(/(\+91[\s-]?)?\b([6-9]\d{4})[\s-]?(\d{5})\b/g, (x, a, b, c) => `<a class="tellink" href="tel:+91${b}${c}">📞 ${x}</a>`);
+const telLinks = (html) => String(html).split(/(<[^>]*>)/).map((part) => part.startsWith("<") ? part : part.replace(/(\+91[\s-]?)?\b([6-9]\d{4})[\s-]?(\d{5})\b/g, (x, a, b, c) => `<a class="tellink" href="tel:+91${b}${c}">📞 ${x}</a>`)).join("");
 $("sugg").innerHTML = ["Which plumber attended recently?", "Who repaired the gate recently?", "When is the next Lift AMC due?", "Who is inside now?"]
   .concat(BOOT.money ? ["What was paid for the AC AMC?"] : []).map((q) => `<button type="button" data-ask="${esc(q)}">${esc(q)}</button>`).join("");
 $("sugg").onclick = (e) => { const b = e.target.closest("button"); if (b) doAsk(b.dataset.ask); };
+$("answers").addEventListener("click", (e) => { const b = e.target.closest("[data-bill]"); if (b) { e.preventDefault(); openBill(JSON.parse(b.dataset.bill)); } });
 $("askForm").onsubmit = (e) => { e.preventDefault(); doAsk($("askQ").value); };
+let askBusy = "", askAt = 0;
 async function doAsk(q) {
   q = String(q || "").trim(); if (!q) return;
+  // 1 Oct 2026: the same question came back twice (Ask button + keyboard Go): the same words again within 10 s = no second answer
+  if (askBusy === q && Date.now() - askAt < 10000) return;
+  askBusy = q; askAt = Date.now();
   $("askQ").value = q; $("askQ").blur();
   const box = document.createElement("div"); box.className = "ans"; box.innerHTML = `<div class="q">${esc(q)}</div><div class="hint">Looking…</div>`;
   $("answers").prepend(box);
@@ -300,8 +344,9 @@ async function doAsk(q) {
     box.innerHTML = `<div class="q">${esc(q)}${r.heading ? " · " + esc(r.heading) : ""}</div>` + r.lines.map((l) => `<p>${telLinks(l)}</p>`).join("") +
       r.people.slice().sort((a, b) => ((a.replaced ? 1 : 0) - (b.replaced ? 1 : 0)) || ((b.current ? 1 : 0) - (a.current ? 1 : 0))).slice(0, 4)
         .map((p) => `<div class="acts"><b style="flex:2;align-self:center${p.replaced ? ";text-decoration:line-through;color:#991b1b" : ""}">${esc(p.name)}${p.replaced ? " (replaced)" : p.current ? " ⭐ current" : ""}</b>${p.mobile && !p.replaced ? `<a class="call" href="${telHref(p.mobile)}">📞 Call</a>` : ""}</div>`).join("") +
+      ((r.bills || []).length ? `<div class="acts">${r.bills.slice(0, 6).map((b) => billBtn(b, b.label.slice(0, 32))).join("")}</div>` : "") +
       ((r.links || []).length ? `<div class="acts">${r.links.slice(0, 6).map((l) => `<a href="${esc(l.url)}" target="_blank">✉️ ${esc(l.label.slice(0, 28))}</a>`).join("")}</div>` : "");
-  } catch (e) { box.innerHTML = `<div class="q">${esc(q)}</div><p style="color:var(--bad)">${esc(e.message)}</p>`; }
+  } catch (e) { askBusy = ""; box.innerHTML = `<div class="q">${esc(q)}</div><p style="color:var(--bad)">${esc(e.message)}</p>`; }
 }
 let seg = "vis";
 $("tSeg").onclick = (e) => {
@@ -658,7 +703,7 @@ function renderWorks() {
     const head = `<h4><span>${esc(title)} <span style="font-weight:400;font-size:13px;color:var(--muted)">· ${js.length}${wStat === "done" ? " done" : " pending"}</span></span>
       <span>${wView === "person" && g ? `<button data-whist="${esc(g)}">History</button> ` : ""}${wView === "person" && first.vendor_key && first.vendor_mobile ? `<a href="tel:+91${esc(first.vendor_mobile)}">📞 Call</a>` : ""}</span></h4>`;
     const rows = js.map((j) => `<div class="wrow">
-      <div>${j.priority && j.priority !== "Normal" ? `<span class="pri ${esc(j.priority)}">${esc(j.priority.toUpperCase())}</span>` : ""}<b>${esc(j.subject)}</b>
+      <div>${j.priority && j.priority !== "Normal" ? `<span class="pri ${esc(j.priority)}">${esc(j.priority.toUpperCase())}</span>` : ""}<b>${esc(j.subject)}</b>${rptLabel(j)}
         <span class="pl">${esc([wView !== "place" && j.place, wView !== "person" ? (j.vendor_label || (j.trade ? "any " + j.trade.toLowerCase() : "")) : (j.vendor_company && j.vendor_name ? "→ " + j.vendor_name : "")].filter(Boolean).join(" · "))}</span></div>
       ${j.blocked ? `<div class="wait">⏳ Waits for: ${j.waits_for.filter((w) => OPEN.includes(w.status)).map((w) => esc([w.place, w.subject].filter(Boolean).join(" — "))).join("; ")}</div>` : ""}
       ${j.description ? `<small style="color:var(--muted)">${esc(j.description)}</small>` : ""}
@@ -754,7 +799,7 @@ function doneSheet(j, after) {
     ev.preventDefault();
     const fd = Object.fromEntries(new FormData(ev.target).entries());
     const btn = ev.target.querySelector(".save"); btn.disabled = true; btn.textContent = "Saving…";
-    try { await call("setJobStatus", j.id, "Done", fd.note || "", fd.vendor_key || ""); toast("✓ Marked done" + (fd.vendor_name ? " — by " + fd.vendor_name : "")); closeSheet(); after && after(); }
+    try { const r = await call("setJobStatus", j.id, "Done", fd.note || "", fd.vendor_key || ""); toast(doneToast(r, fd.vendor_name ? " — by " + fd.vendor_name : "")); closeSheet(); after && after(); }
     catch (err) { toast(err.message, 1); btn.disabled = false; btn.textContent = "✓ Mark done"; }
   };
 }
@@ -772,14 +817,18 @@ async function workForm(v) {
     <div class="hint">Leave empty if it can start now.</div>
     <label>Photo${v.id ? " (adds one more)" : " of the problem"}</label>
     <div class="wphoto"><label class="pbtn" for="wPhotoIn">📷 Add photos (camera or gallery — several at once)</label><input id="wPhotoIn" type="file" accept="image/*" multiple class="hide"></div><div class="thumbs" id="wPhotoPrevs"></div>
+    ${repeatBlock(v, true)}
     <label>Details (optional)</label><textarea name="description">${esc(v.description || "")}</textarea>
     <button class="save" type="submit">Save</button></form>`);
   initWho(document.querySelector("#wForm [data-who]"));
+  initRepeat($("wForm"));
   $("wPhotoIn").onchange = async () => { const box = $("wPhotoPrevs"); box.innerHTML = ""; for (const f of [...$("wPhotoIn").files].slice(0, 8)) { const i = document.createElement("img"); i.src = await shrink(f, 200, 0.6); box.appendChild(i); } };
   $("wForm").onsubmit = async (ev) => {
     ev.preventDefault();
     const fd = Object.fromEntries(new FormData(ev.target).entries());
     fd.depends_on = [...ev.target.depends_on.selectedOptions].map((x) => x.value).join(", ");
+    { const re = repeatCheck(ev.target, fd); if (re) return toast(re, 1); }
+    if (!ev.target.querySelector("[data-rpt]").checked || !fd.scheduled_on) delete fd.scheduled_on;   // the date box belongs to the periodic part
     if (v.id) fd.id = v.id;
     const fs = $("wPhotoIn").files;
     const btn = ev.target.querySelector(".save"); btn.disabled = true; btn.textContent = "Saving…";
@@ -810,7 +859,7 @@ $("tab-today").addEventListener("click", async (e) => {
   if (t.dataset.jst === "Done") { const j = (W ? W.jobs : []).find((x) => x.id === t.dataset.id); if (j) return doneSheet(j, loadWorks); }
   if (t.dataset.jst) {
     t.disabled = true;
-    try { await call("setJobStatus", t.dataset.id, t.dataset.jst, ""); toast(t.dataset.jst === "Done" ? "✓ Marked done" : "✓ Updated"); loadWorks(); }
+    try { const r = await call("setJobStatus", t.dataset.id, t.dataset.jst, ""); toast(t.dataset.jst === "Done" ? doneToast(r) : "✓ Updated"); loadWorks(); }
     catch (err) { toast(err.message, 1); t.disabled = false; }
   }
 });

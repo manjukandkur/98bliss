@@ -87,10 +87,11 @@ form.f button.save{width:100%;margin-top:16px;padding:14px;border:0;border-radiu
 .card.old{background:#fff7f7;border:1px solid #fecaca}.card.old b.n{text-decoration:line-through;color:#6b7280}
 .repl{background:#fee2e2;color:#991b1b;border-radius:10px;padding:8px 10px;margin-top:8px;font-size:14px;font-weight:600}
 .lvl{font-size:11px;background:#fca311;color:#14213d;border-radius:999px;padding:1px 7px;font-weight:700;margin-left:4px}
-body.nomoney .money,body.nomoney .sheet,body.nomoney #sheetLink,body.nomoney .billbtn{display:none!important}
+body.nomoney .money,body.nomoney .sheet,body.nomoney #sheetLink,body.nomoney .billbtn:not(.docbtn){display:none!important}
 .billbtn{background:#fff7ed!important;border-color:#fdba74!important;color:#9a3412!important}
 .tellink{white-space:nowrap;font-weight:600;color:#1d4ed8;text-decoration:none}
 .who .chosen{display:flex;align-items:center;gap:8px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:10px;padding:10px 12px;margin-bottom:6px;font-weight:600}.who .chosen button{margin-left:auto;border:0;background:#fff;border-radius:999px;width:30px;height:30px;font-size:16px}.who .wl{display:flex;flex-direction:column;gap:4px;margin-top:6px;max-height:260px;overflow:auto}.who .wl button{text-align:left;border:1px solid #e5e7eb;background:#fff;border-radius:10px;padding:10px 12px;font-size:15px;color:inherit}.who .wl small{color:#6b7280;display:block;font-size:12.5px}.who .wl button.co{background:#eff6ff;border-color:#bfdbfe}.who .wnewp{margin-top:8px;border:1px dashed #94a3b8;background:#f8fafc;border-radius:10px;padding:9px 12px;font-size:15px;font-weight:600;color:#1d4ed8;width:100%}.who .npadd{width:100%;margin-top:8px;border:0;border-radius:10px;background:#1d4ed8;color:#fff;font-weight:700;padding:11px;font-size:15px}.who .np{background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px;padding:8px 10px}.who .np input,.who .np select{margin-top:6px}.who .np{display:none;margin-top:6px}.who.adding .np{display:block}.who .whint{font-size:12px;color:#6b7280;margin-top:4px}
+.rpt{display:flex!important;align-items:center;gap:8px;margin-top:12px;font-weight:600}.rpt input{width:22px;height:22px;margin:0}.rptBox{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:8px 10px;margin-top:6px}.rptBox input[type=number]{margin-top:8px}.rptTag{display:inline-block;margin-left:6px;padding:1px 8px;border-radius:999px;background:#ecfeff;color:#155e75;font-size:12px;font-weight:600}
 </style>
 </head>
 <body>
@@ -177,6 +178,32 @@ const $ = (id) => document.getElementById(id);
 const lastCopy = (name, v) => { try { const key = "bliss98_c_" + String(BOOT.k).slice(-12) + "_" + name;
   if (v === undefined) return JSON.parse(localStorage.getItem(key) || "null"); localStorage.setItem(key, JSON.stringify(v)); } catch (e) { return null; } };
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+// ---- 🔁 periodic works (1 Oct 2026): "an option to select periodical ... 1 month, 2 months or enter number of days ... if checked
+// only, or else it is understood it is one time" (purifiers every 3-4 months, softener / DG batteries every 6 months...)
+const RPT = [[30, "1 month"], [61, "2 months"], [91, "3 months"], [122, "4 months"], [182, "6 months"], [365, "1 year"]];
+const repeatBlock = (v, withDate) => `<label class="rpt"><input type="checkbox" data-rpt ${v.repeat_days ? "checked" : ""}> 🔁 Periodical — it repeats</label>
+  <div class="rptBox ${v.repeat_days ? "" : "hide"}"><div class="chips">${RPT.map(([n, l]) => `<button type="button" data-rd="${n}" class="${Number(v.repeat_days) === n ? "on" : ""}">${l}</button>`).join("")}</div>
+  <input name="repeat_days" type="number" inputmode="numeric" min="1" max="3650" placeholder="or type the number of days, e.g. 100" value="${esc(v.repeat_days || "")}">
+  ${withDate ? `<label>Next due on</label><input type="date" name="scheduled_on" value="${esc(v.scheduled_on || "")}">` : ""}
+  <div class="hint muted" style="font-size:12px">When it is marked done, the next one is made by itself with its due date and goes on the 98 Bliss House calendar as a reminder.</div></div>`;
+function initRepeat(form) {
+  const cb = form.querySelector("[data-rpt]"); if (!cb) return;
+  const box = form.querySelector(".rptBox"), inp = form.querySelector("[name=repeat_days]");
+  const mark = () => box.querySelectorAll("[data-rd]").forEach((b) => b.classList.toggle("on", b.dataset.rd === String(inp.value)));
+  cb.onchange = () => { box.classList.toggle("hide", !cb.checked); if (!cb.checked) inp.value = ""; mark(); };
+  box.querySelectorAll("[data-rd]").forEach((b) => b.onclick = () => { inp.value = b.dataset.rd; mark(); });
+  inp.oninput = mark;
+}
+/** Check before saving: unticked = one-time work; ticked needs how often. Returns an error text or "". */
+function repeatCheck(form, fd) {
+  const cb = form.querySelector("[data-rpt]"); if (!cb) return "";
+  if (!cb.checked) { fd.repeat_days = ""; return ""; }
+  if (!(Number(fd.repeat_days) >= 1)) return "Periodical: choose how often (1 month, 3 months…) or type the days";
+  return "";
+}
+const dueTxt = (ymd) => { try { return new Date(ymd + "T00:00:00+05:30").toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kolkata" }); } catch (e) { return ymd; } };
+const rptLabel = (j) => j.repeat_days ? `<span class="rptTag">🔁 every ${esc(j.repeat_label || j.repeat_days + " days")}${j.scheduled_on && j.status !== "Done" ? " · due " + esc(dueTxt(j.scheduled_on)) : ""}</span>` : "";
+const doneToast = (r, extra) => "✓ Marked done" + (extra || "") + (r && r.next ? " — next one made (on the calendar)" : "");
 function call(fn, ...args) { return window.appCall(fn, args); }
 function toast(msg, bad) {
   const t = $("toast"); t.textContent = msg; t.className = bad ? "err" : ""; t.style.display = "block";
@@ -202,7 +229,7 @@ async function openBill(b) {
   } catch (err) { if (w) w.close(); toast(err.message, 1); }
 }
 // any Indian mobile written in a text becomes a tap-to-call link (28 Sep 2026: "direct calling options from the mobile")
-const telLinks = (html) => String(html).replace(/(\+91[\s-]?)?\b([6-9]\d{4})[\s-]?(\d{5})\b/g, (x, a, b, c) => `<a class="tellink" href="tel:+91${b}${c}">📞 ${x}</a>`);
+const telLinks = (html) => String(html).split(/(<[^>]*>)/).map((part) => part.startsWith("<") ? part : part.replace(/(\+91[\s-]?)?\b([6-9]\d{4})[\s-]?(\d{5})\b/g, (x, a, b, c) => `<a class="tellink" href="tel:+91${b}${c}">📞 ${x}</a>`)).join("");
 const acts = (mobile, contact, email) => `<div class="acts">
   ${mobile ? `<a class="call" href="${telHref(mobile)}">📞 Call</a>${digits(mobile).length === 10 ? `<a class="wa" href="https:\/\/wa.me/91${digits(mobile)}">WhatsApp</a>` : ""}` : ""}
   ${email ? `<a href="mailto:${esc(email)}">✉️ Email</a>` : ""}
@@ -231,8 +258,12 @@ const SUGG = ["Which plumber attended recently?", "Who repaired the gate recentl
 document.body.classList.toggle("nomoney", BOOT.money === false);
 $("sugg").innerHTML = SUGG.map((q) => `<button type="button" data-ask="${esc(q)}">${esc(q)}</button>`).join("");
 $("askForm").onsubmit = (e) => { e.preventDefault(); doAsk($("askQ").value); };
+let askBusy = "", askAt = 0;
 async function doAsk(q) {
   q = String(q || "").trim(); if (!q) return;
+  // 1 Oct 2026: the same question came back twice (Ask button + keyboard Go): the same words again within 10 s = no second answer
+  if (askBusy === q && Date.now() - askAt < 10000) return;
+  askBusy = q; askAt = Date.now();
   $("askQ").value = q;
   const box = document.createElement("div"); box.className = "ans"; box.innerHTML = `<div class="q">${esc(q)}</div><div class="muted">Looking…</div>`;
   $("answers").prepend(box);
@@ -242,7 +273,7 @@ async function doAsk(q) {
       r.people.slice().sort((a, b) => ((a.replaced ? 1 : 0) - (b.replaced ? 1 : 0)) || ((b.current ? 1 : 0) - (a.current ? 1 : 0))).slice(0, 4).map((p) => `<div class="acts" style="margin-top:6px"><b style="flex:2;align-self:center${p.replaced ? ";text-decoration:line-through;color:#991b1b" : ""}">${esc(p.name)}${p.replaced ? " (replaced)" : p.current ? " ⭐ current" : ""}</b>${p.mobile && !p.replaced ? `<a class="call" href="${telHref(p.mobile)}">📞 Call</a>` : ""}<button data-hist="${esc(p.key)}">History</button></div>`).join("") +
       ((r.bills || []).length ? `<div class="acts">${r.bills.slice(0, 6).map((b) => billBtn(b, b.label.slice(0, 32))).join("")}</div>` : "") +
       (r.links.length ? `<div class="acts">${r.links.slice(0, 6).map((l) => `<a href="${esc(l.url)}" target="_blank">✉️ ${esc(l.label.slice(0, 28))}</a>`).join("")}</div>` : "");
-  } catch (e) { box.innerHTML = `<div class="q">${esc(q)}</div><p class="red">${esc(e.message)}</p>`; }
+  } catch (e) { askBusy = ""; box.innerHTML = `<div class="q">${esc(q)}</div><p class="red">${esc(e.message)}</p>`; }
 }
 
 // ---- who to call / search
@@ -324,7 +355,7 @@ document.body.addEventListener("click", async (e) => {
   if (t.dataset.ws) { wStat = t.dataset.ws; return renderWorks(); }
   if (t.dataset.jst === "Done") { const j = (W ? W.jobs : []).concat(data ? data.jobs : []).find((x) => x.id === t.dataset.id); if (j) return doneSheet(j, () => { loadWorks(); loadDash(); }); }
   if (t.dataset.jst) {
-    try { await call("setJobStatus", t.dataset.id, t.dataset.jst, ""); toast(t.dataset.jst === "Done" ? "✓ Marked done" : "✓ " + t.dataset.jst); loadWorks(); loadDash(); } catch (err) { toast(err.message, 1); }
+    try { const r = await call("setJobStatus", t.dataset.id, t.dataset.jst, ""); toast(t.dataset.jst === "Done" ? doneToast(r) : "✓ " + t.dataset.jst); loadWorks(); loadDash(); } catch (err) { toast(err.message, 1); }
     return;
   }
   if (t.dataset.cur) { try { await call("setCurrent", t.dataset.cur, !!t.dataset.on); toast(t.dataset.on ? "⭐ Marked current — everyone sees it" : "✓ No longer current"); whoLast = null; loadWho(); } catch (err) { toast(err.message, 1); } return; }
@@ -415,7 +446,8 @@ const F = {
     <div class="row"><div><label>Trade</label><select name="trade"><option value=""></option>${opts(BOOT.trades, v.trade)}</select></div>
     <div><label>Type</label><select name="job_type">${opts(["Breakdown", "AMC Visit", "Installation", "Inspection", "Other"], v.job_type)}</select></div></div>
     <label>Under AMC</label><select name="amc_id"><option value=""></option>${(data ? data.amc : []).map((a) => `<option value="${esc(a.id)}" ${a.id === v.amc_id ? "selected" : ""}>${esc(a.equipment)}</option>`).join("")}</select>
-    <label>Scheduled on</label><input type="date" name="scheduled_on" value="${esc(v.scheduled_on || "")}">
+    <label>Scheduled / due on</label><input type="date" name="scheduled_on" value="${esc(v.scheduled_on || "")}">
+    ${repeatBlock(v, false)}
     <div class="row money"><div><label>Quoted ₹</label><input name="quoted" inputmode="decimal" value="${esc(v.quoted || "")}"></div>
     <div><label>Billed ₹</label><input name="billed" inputmode="decimal" value="${esc(v.billed || "")}"></div></div>
     <label>Problem / request</label><textarea name="description">${esc(v.description || "")}</textarea>
@@ -547,7 +579,7 @@ function doneSheet(j, after) {
     ev.preventDefault();
     const fd = Object.fromEntries(new FormData(ev.target).entries());
     const btn = ev.target.querySelector(".save"); btn.disabled = true; btn.textContent = "Saving…";
-    try { await call("setJobStatus", j.id, "Done", fd.note || "", fd.vendor_key || ""); toast("✓ Marked done" + (fd.vendor_name ? " — by " + fd.vendor_name : "")); closeSheet(); after && after(); }
+    try { const r = await call("setJobStatus", j.id, "Done", fd.note || "", fd.vendor_key || ""); toast(doneToast(r, fd.vendor_name ? " — by " + fd.vendor_name : "")); closeSheet(); after && after(); }
     catch (err) { toast(err.message, 1); btn.disabled = false; btn.textContent = "✓ Mark done"; }
   };
 }
@@ -559,9 +591,11 @@ async function openForm(kind, pre) {
     <datalist id="tradeList">${BOOT.trades.map((t) => `<option>${esc(t)}</option>`).join("")}</datalist>
     <button class="save" type="submit">Save</button></form>`);
   initWho(document.querySelector("#theForm [data-who]"));
+  initRepeat($("theForm"));
   $("theForm").onsubmit = async (ev) => {
     ev.preventDefault();
     const fd = Object.fromEntries(new FormData(ev.target).entries());
+    { const re = repeatCheck(ev.target, fd); if (re) return toast(re, 1); }
     ev.target.querySelectorAll("select[multiple]").forEach((s) => (fd[s.name] = [...s.selectedOptions].map((x) => x.value).join(", ")));
     const ph = ev.target.querySelector("input[data-photo]");
     if (ph && ph.files && ph.files.length) fd.photos = await shrinkAll(ph.files);   // medium pictures (about 1000 px) + small previews
@@ -647,7 +681,7 @@ function renderWorks() {
       <span>${wView === "person" && g && !/^(co|tr):/.test(g) ? `<button data-hist="${esc(g)}">History</button> ` : ""}${wView === "person" && first.vendor_key && first.vendor_mobile ? `<a class="call" href="${telHref(first.vendor_mobile)}">📞 Call</a>` : ""}</span></h4>`;
     const rows = js.map((j) => `<div class="wrow">
       <div class="w1">${j.priority && j.priority !== "Normal" ? `<span class="pri ${esc(j.priority)}">${esc(j.priority.toUpperCase())}</span>` : ""}
-        <b>${desk("job", j.id, j.subject)}</b>
+        <b>${desk("job", j.id, j.subject)}</b>${rptLabel(j)}
         <span class="pl">${esc([wView !== "place" && j.place, wView !== "person" ? (j.vendor_label || (j.trade ? "any " + j.trade.toLowerCase() : "")) : (j.vendor_company && j.vendor_name ? "→ " + j.vendor_name : "")].filter(Boolean).join(" · "))}</span></div>
       ${j.blocked ? `<div class="wait">⏳ Waits for: ${j.waits_for.filter((w) => OPEN.includes(w.status)).map((w) => esc([w.place, w.subject].filter(Boolean).join(" — ") + (w.vendor_name ? " (" + w.vendor_name + ")" : ""))).join("; ")}</div>` : ""}
       ${(j.photos || []).length ? `<div class="thumbs">${j.photos.map((p) => `<img src="${esc(p.thumb)}" data-wph="${esc(p.id)}" data-job="${esc(j.id)}" alt="photo">`).join("")}</div>` : ""}
