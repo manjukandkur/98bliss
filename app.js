@@ -27,7 +27,8 @@
   // on the phone per link + screen, so the screen draws at once and Google is asked in the background. (Every server call
   // still checks the link itself, so a switched-off link stops working at its next action.)
   var want = q.get("p") || (here === "owner" ? "owner" : "");
-  var ck = "bliss98_boot_" + k.slice(-12) + "_" + here + "_" + want;
+  var ckFor = function (pg, w) { return "bliss98_boot_" + k.slice(-12) + "_" + pg + "_" + (w === "owner" ? "owner" : ""); };
+  var ck = ckFor(here, want);
   var cached = null;
   try { cached = JSON.parse(localStorage.getItem(ck) || "null"); } catch (e) {}
   var fresh = api("boot", k, [], want).then(function (b) { try { localStorage.setItem(ck, JSON.stringify(b)); } catch (e) {} return b; });
@@ -47,6 +48,13 @@
       document.body.appendChild(s);
     };
     if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", run); else run();
+    // warm the OTHER screen's start data too, so the first switch to it is also instant
+    if (b.full) setTimeout(function () {
+      var w = here === "owner" ? "gate" : "owner";
+      api("boot", k, [], w).then(function (x) {
+        try { (w === "owner" ? [ckFor("gate", "owner"), ckFor("owner", "owner")] : [ckFor("gate", "")]).forEach(function (c) { localStorage.setItem(c, JSON.stringify(x)); }); } catch (e) {}
+      }, function () {});
+    }, 1500);
   }).catch(function (e) {
     var go = function () { stop(e.message); };
     if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", go); else go();
