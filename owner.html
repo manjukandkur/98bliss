@@ -173,6 +173,9 @@ body.nomoney .money,body.nomoney .sheet,body.nomoney #sheetLink,body.nomoney .bi
 <script type="text/plain" id="main">
 (() => {
 const $ = (id) => document.getElementById(id);
+// 1 Oct 2026 "slight lag": each list shows its last-seen copy at once, then the fresh one from Google replaces it.
+const lastCopy = (name, v) => { try { const key = "bliss98_c_" + String(BOOT.k).slice(-12) + "_" + name;
+  if (v === undefined) return JSON.parse(localStorage.getItem(key) || "null"); localStorage.setItem(key, JSON.stringify(v)); } catch (e) { return null; } };
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 function call(fn, ...args) { return window.appCall(fn, args); }
 function toast(msg, bad) {
@@ -594,7 +597,8 @@ const OPEN = ["Open", "Scheduled", "In Progress"], PRI = { Urgent: 0, High: 1, N
 $("wq").oninput = () => { clearTimeout(wTimer); wTimer = setTimeout(renderWorks, 200); };
 async function loadWorks() {
   const mine = ++wSeq;
-  try { const r = await call("worksView"); if (mine !== wSeq) return; W = r; renderWorks(); }
+  if (!W) { const c = lastCopy("works"); if (c) { W = c; renderWorks(); } }
+  try { const r = await call("worksView"); if (mine !== wSeq) return; W = r; lastCopy("works", r); renderWorks(); }
   catch (err) { $("jobList").innerHTML = `<div class="empty">${esc(err.message)}</div>`; }
 }
 function renderWorks() {
@@ -676,8 +680,12 @@ async function loadContacts() {
 }
 
 async function loadDash() {
-  data = await call("dashboard", $("days").value);
-  const x = data, today = x.today;
+  const dk = "dash" + $("days").value;
+  if (!data) { const c = lastCopy(dk); if (c) { data = c; showDash(c); } }
+  const r = await call("dashboard", $("days").value); data = r; lastCopy(dk, r); showDash(r);
+}
+function showDash(x) {
+  const today = x.today;
   $("me").textContent = BOOT.role === "owner" ? "You · Owner" : BOOT.name + " · " + (BOOT.role === "manager" ? "Admin" : (BOOT.staff_role || "Staff") + " (no money)");
   document.body.classList.toggle("nomoney", x.money === false);
   const admin = BOOT.role === "owner" || BOOT.role === "manager";   // 2 levels (28 Sep 2026): Admin = owner + Bliss Manager

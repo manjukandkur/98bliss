@@ -224,6 +224,9 @@ textarea{min-height:70px;font-size:16px}
 <script type="text/plain" id="main">
 (() => {
 const $ = (id) => document.getElementById(id);
+// 1 Oct 2026 "slight lag": each list shows its last-seen copy at once, then the fresh one from Google replaces it.
+const lastCopy = (name, v) => { try { const key = "bliss98_c_" + String(BOOT.k).slice(-12) + "_" + name;
+  if (v === undefined) return JSON.parse(localStorage.getItem(key) || "null"); localStorage.setItem(key, JSON.stringify(v)); } catch (e) { return null; } };
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const COURIERS = BOOT.couriers;
 $("house").textContent = BOOT.house;
@@ -523,7 +526,10 @@ function resetForm() {
 
 // ---- inside now: check out with an approximate time
 async function loadInside() {
-  const rows = await call("inside");
+  const c = lastCopy("inside"); if (c) showInside(c);
+  const rows = await call("inside"); lastCopy("inside", rows); showInside(rows);
+}
+function showInside(rows) {
   $("nIn").textContent = rows.length ? "(" + rows.length + ")" : "";
   $("insideList").innerHTML = rows.length ? rows.map((r) => `
     <div class="card ${r.earlier_day ? "late" : ""}" id="c-${esc(r.id)}">
@@ -585,7 +591,10 @@ async function refreshCount() { try { const r = await call("inside"); $("nIn").t
 
 // ---- today
 async function loadToday() {
-  const rows = await call("today");
+  const c = lastCopy("today"); if (c) showToday(c);
+  const rows = await call("today"); lastCopy("today", rows); showToday(rows);
+}
+function showToday(rows) {
   $("todayList").innerHTML = rows.length ? rows.map((r) => `
     <div class="card"><div class="t">
       <span class="tag ${esc(r.entry_type)}">${r.entry_type === "Maintenance" ? "Service" : esc(r.entry_type)}</span>
@@ -606,8 +615,8 @@ function closeSheet() { $("sheet").classList.remove("open"); }
 $("sheet").addEventListener("click", (e) => { if (e.target.id === "sheet" || e.target.closest(".close")) closeSheet(); });
 async function loadWorks() {
   const mine = ++wSeq;
-  if (!W) $("jobList").innerHTML = '<div class="empty">Loading…</div>';
-  try { const r = await call("worksView"); if (mine !== wSeq) return; W = r; renderWorks(); }
+  if (!W) { const c = lastCopy("works"); if (c) { W = c; renderWorks(); } else $("jobList").innerHTML = '<div class="empty">Loading…</div>'; }
+  try { const r = await call("worksView"); if (mine !== wSeq) return; W = r; lastCopy("works", r); renderWorks(); }
   catch (err) { $("jobList").innerHTML = `<div class="empty">${esc(err.message)}</div>`; }
 }
 async function worksCount() {
