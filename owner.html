@@ -261,6 +261,7 @@ $("status").onclick = (e) => { const b = e.target.closest("button"); if (!b) ret
 const qDigits = (q) => { const s = String(q || "").trim(); let x = s.replace(/\D/g, ""); if (/^\+\s*91/.test(s) || (x.length > 10 && x.startsWith("91"))) x = x.slice(2); else if (x.length === 11 && x.startsWith("0")) x = x.slice(1); return x; };
 let whoLast = null;
 const quickWho = () => {
+  whoSeq++;   // any answer still on its way from Google is for older typing - it must not replace this list
   if (!whoLast) return;
   const q = $("q").value.trim().toLowerCase(), qd = qDigits(q), hasLetters = /[a-z]/.test(q);
   if (!q) return renderWho(whoLast);
@@ -275,7 +276,7 @@ async function loadWho() {
   const q = $("q").value.trim(), ck = "who_" + trade + "_" + status + "_" + q.toLowerCase();
   if (!q) { const c = lastCopy(ck); if (c && !whoLast) { whoLast = c; renderWho(c, true); } }
   const r = await call("whoToCall", trade, q, status);
-  if (mine !== whoSeq) return;
+  if (mine !== whoSeq || $("q").value.trim() !== q) return;
   if (!q) { whoLast = r; lastCopy(ck, r); }
   renderWho(r);
 }
