@@ -330,7 +330,10 @@ $("sugg").innerHTML = ["Which plumber attended recently?", "Who repaired the gat
 $("sugg").onclick = (e) => { const b = e.target.closest("button"); if (b) doAsk(b.dataset.ask); };
 $("answers").addEventListener("click", (e) => { const b = e.target.closest("[data-bill]"); if (b) { e.preventDefault(); openBill(JSON.parse(b.dataset.bill)); } });
 $("askForm").onsubmit = (e) => { e.preventDefault(); doAsk($("askQ").value); };
-$("askQ").addEventListener("focus", function () { const el = this; setTimeout(function () { try { el.setSelectionRange(0, el.value.length); } catch (x) { el.select(); } }, 0); });   /* tap the box = old question selected, typing replaces it */
+(function () { const q = $("askQ"); let fresh = false; const all = function () { try { q.setSelectionRange(0, q.value.length); } catch (x) { q.select(); } };   /* tap the box = old question selected, typing replaces it */
+  q.addEventListener("focus", function () { fresh = true; setTimeout(all, 0); });
+  q.addEventListener("pointerup", function (e) { if (fresh) { fresh = false; e.preventDefault(); all(); } });   /* the tap itself would otherwise drop the selection (desktop, iPhone) */
+  q.addEventListener("blur", function () { fresh = false; }); })();
 let askBusy = "", askAt = 0;
 async function doAsk(q) {
   q = String(q || "").trim(); if (!q) return;
