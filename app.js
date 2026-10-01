@@ -23,7 +23,21 @@
   if (!k) { document.addEventListener("DOMContentLoaded", function () { stop("Open the 98 Bliss link the owner sent you (it ends in ?k=…)."); }); return; }
   var base = location.href.replace(/[?#].*$/, "").replace(/[^/]*$/, "");
   var here = /owner\.html$/.test(location.pathname) ? "owner" : "gate";
-  api("boot", k, [], q.get("p") || (here === "owner" ? "owner" : "")).then(function (b) {
+  // 1 Oct 2026 "slight lag": switching between the gate and office tabs waited for Google every time. The start data is kept
+  // on the phone per link + screen, so the screen draws at once and Google is asked in the background. (Every server call
+  // still checks the link itself, so a switched-off link stops working at its next action.)
+  var want = q.get("p") || (here === "owner" ? "owner" : "");
+  var ck = "bliss98_boot_" + k.slice(-12) + "_" + here + "_" + want;
+  var cached = null;
+  try { cached = JSON.parse(localStorage.getItem(ck) || "null"); } catch (e) {}
+  var fresh = api("boot", k, [], want).then(function (b) { try { localStorage.setItem(ck, JSON.stringify(b)); } catch (e) {} return b; });
+  if (cached && cached.page) {
+    fresh.then(function (b) { if (b.page !== cached.page || b.role !== cached.role) location.reload(); },
+      function (e) { if (/not valid|switched off/i.test(e && e.message)) { try { localStorage.removeItem(ck); } catch (x) {} location.reload(); } });
+    fresh = Promise.resolve(cached);
+  }
+  try { var pf = document.createElement("link"); pf.rel = "prefetch"; pf.href = here === "owner" ? "index.html" : "owner.html"; document.head.appendChild(pf); } catch (e) {}
+  fresh.then(function (b) {
     if (b.page !== here) { location.replace(base + (b.page === "owner" ? "owner.html" : "") + "?k=" + encodeURIComponent(k) + (b.page === "owner" ? "&p=owner" : "") + location.hash); return; }
     b.url = base; // links inside the screens ("Owner page", "Gate") stay inside the app
     window.BOOT = b;
