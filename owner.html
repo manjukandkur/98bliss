@@ -40,6 +40,9 @@ input,select{width:100%;padding:11px 12px;border:1px solid #cbd5e1;border-radius
 .cday{background:var(--card);border-radius:12px;padding:8px 10px;margin:8px 0;box-shadow:0 1px 2px rgba(0,0,0,.06)}.cday.today{outline:2px solid #2563eb}
 .cdh{font-size:14px;margin-bottom:4px;color:#334155}.cev{border-left:4px solid #2563eb;background:#eff6ff;border-radius:8px;padding:6px 9px;margin-top:5px;font-size:14px}
 .cev.main{border-left-color:#059669;background:#ecfdf5}.cev .cd{font-size:12.5px;color:#475569;margin-top:2px}.cev .cc{font-size:11.5px;color:#64748b;margin-top:2px}
+/* 3 Oct 2026 22:25 "ask should be available like floating on every page … every page is better" */
+#fab{position:fixed;right:14px;bottom:calc(18px + env(safe-area-inset-bottom));z-index:15;border:0;border-radius:999px;background:#1d4ed8;color:#fff;font-weight:700;font-size:16px;padding:13px 18px;box-shadow:0 6px 18px rgba(29,78,216,.35)}
+#fab.hide{display:none}
 .mbox{margin-top:10px}.mbox #mPanel{background:#fff;border-radius:14px;padding:6px 12px 10px;margin-top:6px;box-shadow:0 1px 2px rgba(0,0,0,.06)}
 /* mail cards: one card per subject (3 Oct 2026) */
 .mcard .mlist{display:none;margin-top:6px;border-top:1px solid #eef2f7}.mcard.open .mlist{display:block}.mcard .mlist div{font-size:13px;padding:5px 0;border-bottom:1px solid #f1f5f9}
@@ -90,8 +93,10 @@ h2{font-size:15px;margin:22px 0 4px;color:#334155;text-transform:uppercase;lette
 .hide{display:none!important}
 #sheet{position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:20;display:none;align-items:flex-end;justify-content:center}
 #sheet.open{display:flex}
-#sheet .box{background:var(--bg);width:100%;max-width:760px;max-height:92vh;overflow:auto;border-radius:18px 18px 0 0;padding:16px 16px 30px}
-#sheet .close{float:right;border:0;background:#e5e7eb;border-radius:999px;width:34px;height:34px;font-size:18px}
+/* 3 Oct 2026 22:28 "Unable to close or go back" (iPhone home-screen app): the sheet now stops below the status bar and the × stays
+   on screen while the form scrolls; tapping the dark area, the phone's Back swipe and Escape also close it */
+#sheet .box{background:var(--bg);width:100%;max-width:760px;max-height:calc(100vh - env(safe-area-inset-top) - 14px);max-height:calc(100dvh - env(safe-area-inset-top) - 14px);overflow:auto;-webkit-overflow-scrolling:touch;border-radius:18px 18px 0 0;padding:16px 16px calc(30px + env(safe-area-inset-bottom))}
+#sheet .close{position:sticky;top:0;float:right;z-index:5;border:0;background:#1e293b;color:#fff;border-radius:999px;width:40px;height:40px;font-size:20px;box-shadow:0 2px 8px rgba(0,0,0,.25)}
 table{width:100%;border-collapse:collapse;font-size:13px;background:#fff;border-radius:10px;overflow:hidden}
 td,th{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
 th{background:#f8fafc;font-size:12px;color:#475569}
@@ -205,6 +210,7 @@ body.nomoney .money,body.nomoney .sheet,body.nomoney #sheetLink,body.nomoney .bi
 
 <div id="sheet"><div class="box" id="sheetBox"></div></div>
 <div id="toast"></div>
+<button id="fab" type="button" class="hide" aria-label="Ask">🔎 Ask</button>
 
 <script type="text/plain" id="main">
 (() => {
@@ -284,6 +290,7 @@ function showTab(t) {
   document.querySelectorAll("nav button").forEach((x) => x.classList.toggle("on", x.dataset.tab === t));
   { const on = document.querySelector("nav button.on"); if (on && on.scrollIntoView) on.scrollIntoView({ block: "nearest", inline: "center" }); }
   TABS.forEach((x) => $("tab-" + x).classList.toggle("hide", x !== t));
+  $("fab").classList.toggle("hide", t === "ask");   // the floating Ask is on every page except Ask itself
   if (t === "who") loadWho();
   if (t === "contacts") loadContacts();
   if (t === "jobs") loadWorks();
@@ -300,14 +307,14 @@ $("askForm").onsubmit = (e) => { e.preventDefault(); doAsk($("askQ").value); };
   q.addEventListener("pointerup", function (e) { if (fresh) { fresh = false; e.preventDefault(); all(); } });   /* the tap itself would otherwise drop the selection (desktop, iPhone) */
   q.addEventListener("blur", function () { fresh = false; }); })();
 let askBusy = "", askAt = 0;
-async function doAsk(q) {
+async function doAsk(q, target) {
   q = String(q || "").trim(); if (!q) return;
   // 1 Oct 2026: the same question came back twice (Ask button + keyboard Go): the same words again within 10 s = no second answer
   if (askBusy === q && Date.now() - askAt < 10000) return;
   askBusy = q; askAt = Date.now();
   $("askQ").value = q;
   const box = document.createElement("div"); box.className = "ans"; box.innerHTML = `<div class="q">${esc(q)}</div><div class="muted">Looking…</div>`;
-  $("answers").prepend(box);
+  (target || $("answers")).prepend(box);
   try {
     const r = await call("ask", q);
     box.innerHTML = `<div class="q">${esc(q)}${r.heading ? " · " + esc(r.heading) : ""}</div>` + r.lines.map((l) => `<p>${telLinks(l)}</p>`).join("") +
@@ -534,6 +541,14 @@ $("calAdd").onclick = (e) => {
   };
 };
 
+// ---- 🔎 floating Ask on every page (3 Oct 2026): "if I have some questions related to email if ask is there i will ask there … or under tasks"
+$("fab").onclick = () => {
+  openSheet(`<h3>🔎 Ask anything</h3><div class="muted" style="font-size:12.5px">Mails, works, AMCs, payments, people, calendar — one box.</div>
+    <form class="ask" id="fabForm" style="margin-top:8px"><input id="fabQ" type="search" enterkeyhint="search" autocomplete="off" placeholder="e.g. last service of the lift? pending FCML works?"><button type="submit">Ask</button></form><div id="fabAns"></div>`);
+  $("fabForm").onsubmit = (e) => { e.preventDefault(); const q = $("fabQ").value; $("fabQ").blur(); doAsk(q, $("fabAns")); };
+  setTimeout(() => $("fabQ").focus(), 60);
+};
+
 // ---- 💰 money inside Ask (3 Oct 2026)
 let mView = "", MAILGROUPS = {};
 const numIn = (t) => (String(t || "").match(/\d[\d,]*(?:\.\d{1,2})?/) || [""])[0].replace(/,/g, "");   // "Rs. 1,44,855" -> "144855"
@@ -549,8 +564,13 @@ function showMoney() {
   $("payList").innerHTML = ps.length ? `<table><tr><th>Date</th><th>Vendor</th><th>Amount</th><th>Mode</th></tr>${ps.map((p) => `<tr><td>${d(p.date)}</td><td>${p.vendor_key ? `<a href="#" data-hist="${esc(p.vendor_key)}">${esc(p.vendor_name || "")}</a>` : esc(p.notes ? p.notes.split(" — ")[0].slice(0, 40) : "")}</td><td>${inr(p.amount)}</td><td>${esc(p.mode)}${p.bill ? " " + billBtn(p.bill, "Bill") : ""}</td></tr>`).join("")}</table>` : '<div class="empty">No payments recorded.</div>';
 }
 function confirmBox(q) { return window.confirm(q); }
-function closeSheet() { $("sheet").classList.remove("open"); }
-function openSheet(html) { $("sheetBox").innerHTML = '<button class="close">×</button>' + html; $("sheet").classList.add("open"); }
+function closeSheet() { const was = $("sheet").classList.contains("open"); $("sheet").classList.remove("open"); if (was && history.state && history.state.sheet) { popMine++; history.back(); } }
+function openSheet(html) { $("sheetBox").innerHTML = '<button class="close" type="button" aria-label="Close">×</button>' + html; $("sheetBox").scrollTop = 0;
+  if (!$("sheet").classList.contains("open")) { try { history.pushState({ sheet: 1 }, ""); } catch (e) { } } $("sheet").classList.add("open"); }
+// phone Back swipe / Escape close an open sheet (3 Oct 2026 22:28 "Unable to close or go back")
+let popMine = 0;   // Back steps the app itself made when a sheet was closed with × - they must not close a sheet opened since
+window.addEventListener("popstate", () => { if (popMine > 0) { popMine--; return; } if ($("sheet").classList.contains("open")) $("sheet").classList.remove("open"); });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && $("sheet").classList.contains("open")) closeSheet(); });
 
 // ---- history
 async function openHistory(key) {
@@ -894,7 +914,8 @@ const grpOf = (j) => j.group || "none";   // "none" = not assigned yet ("" is Ev
 const grpTitle = (j) => j.group_title || "Not assigned yet";
 // a fixed colour per group: [strong, soft] - the same group always gets the same colour
 const GRP_COLOURS = [["#2563eb", "#eff6ff"], ["#059669", "#ecfdf5"], ["#d97706", "#fffbeb"], ["#7c3aed", "#f5f3ff"], ["#db2777", "#fdf2f8"], ["#0891b2", "#ecfeff"], ["#65a30d", "#f7fee7"], ["#dc2626", "#fef2f2"]];
-const grpColour = (g) => { if (g === "none") return ["#64748b", "#f8fafc"]; let h = 0; for (const ch of String(g)) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return GRP_COLOURS[h % GRP_COLOURS.length]; };
+// 3 Oct 2026 22:25 "card colour task make it blue": every task card is blue
+const grpColour = () => GRP_COLOURS[0];
 function renderBoard(q, open, done) {
   const today = (W && W.today) || "";
   let all = open.concat(done.filter((j) => !j.completed_on || j.completed_on >= addDaysYmd(today, -30)));
