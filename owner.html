@@ -36,6 +36,14 @@ input,select{width:100%;padding:11px 12px;border:1px solid #cbd5e1;border-radius
 .wrow .w1{display:flex;gap:6px;align-items:baseline;flex-wrap:wrap}.wrow .pl{color:var(--muted);font-size:13px}
 .pri{font-size:10.5px;font-weight:700;padding:1px 6px;border-radius:999px}.pri.Urgent{background:#fee2e2;color:#991b1b}.pri.High{background:#fef3c7;color:#92400e}.pri.Low{background:#e5e7eb;color:#374151}
 .wait{font-size:12.5px;color:#92400e;margin-top:3px}.wrow .acts{margin-top:6px}
+.fchip{border:1px solid #bfdbfe;background:#eff6ff;border-radius:999px;padding:4px 9px;font-size:12.5px;margin:3px 3px 0 0;color:#1e3a8a}
+.cday{background:var(--card);border-radius:12px;padding:8px 10px;margin:8px 0;box-shadow:0 1px 2px rgba(0,0,0,.06)}.cday.today{outline:2px solid #2563eb}
+.cdh{font-size:14px;margin-bottom:4px;color:#334155}.cev{border-left:4px solid #2563eb;background:#eff6ff;border-radius:8px;padding:6px 9px;margin-top:5px;font-size:14px}
+.cev.main{border-left-color:#059669;background:#ecfdf5}.cev .cd{font-size:12.5px;color:#475569;margin-top:2px}.cev .cc{font-size:11.5px;color:#64748b;margin-top:2px}
+.mbox{margin-top:10px}.mbox #mPanel{background:#fff;border-radius:14px;padding:6px 12px 10px;margin-top:6px;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+/* mail cards: one card per subject (3 Oct 2026) */
+.mcard .mlist{display:none;margin-top:6px;border-top:1px solid #eef2f7}.mcard.open .mlist{display:block}.mcard .mlist div{font-size:13px;padding:5px 0;border-bottom:1px solid #f1f5f9}
+.mcard .mcount{display:inline-block;background:#1d4ed8;color:#fff;border-radius:999px;font-size:12px;padding:1px 8px;margin-left:6px}
 /* 3 Oct 2026 "work like Trello": the Works board - one column per stage, swipe sideways on the phone */
 .board{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;padding:6px 2px 14px;margin:0 -4px;-webkit-overflow-scrolling:touch}
 .bcol{flex:0 0 min(84vw,300px);scroll-snap-align:start;background:#e8edf3;border-radius:14px;padding:8px;align-self:flex-start;max-height:none}
@@ -43,6 +51,14 @@ input,select{width:100%;padding:11px 12px;border:1px solid #cbd5e1;border-radius
 .bcard{background:#fff;border-radius:10px;padding:9px 10px;margin-bottom:8px;box-shadow:0 1px 2px rgba(0,0,0,.08);font-size:14px}
 .bcard .bt{font-weight:600}.bcard .bm{color:#64748b;font-size:12.5px;margin-top:3px}.bcard .bg{display:inline-block;background:#eff6ff;border:1px solid #bfdbfe;border-radius:999px;padding:1px 8px;font-size:12px;margin-top:5px}
 .bcard .acts{margin-top:7px}.bcard .acts button{padding:6px 9px;font-size:13px}.bcard.late{border-left:4px solid #dc2626}
+.bcard.gc{border-top:5px solid var(--gc);background:linear-gradient(var(--gb),#fff 60px);padding:8px 8px 6px}
+.gc .gh{display:flex;justify-content:space-between;align-items:center;font-weight:700;color:var(--gc);font-size:14px;margin:0 2px 6px}.gc .gn{background:var(--gc);color:#fff;border-radius:999px;font-size:12px;padding:1px 8px}
+.bitem{display:flex;gap:8px;align-items:flex-start;background:#fff;border:1px solid #e5e7eb;border-radius:9px;padding:7px 8px;margin-bottom:6px}.bitem.late{border-left:4px solid #dc2626}
+.bitem .bi{flex:1;min-width:0;font-size:14px}.bitem .bi a{font-weight:600}
+.bitem .tick{flex:none;width:28px;height:28px;border-radius:50%;border:2px solid var(--gc);background:#fff;color:var(--gc);font-weight:700;font-size:14px;line-height:1;padding:0}
+.bitem .tick.on{background:var(--gc);color:#fff}.bitem .go1{flex:none;border:0;background:var(--gb);color:var(--gc);border-radius:8px;padding:5px 8px;font-size:13px}
+.gc .gadd{width:100%;border:0;background:transparent;color:var(--gc);font-weight:600;font-size:13px;padding:4px;text-align:left}
+#wgroup button[data-wg]{border-left-width:5px}
 .bcol .badd{width:100%;border:1px dashed #94a3b8;background:transparent;border-radius:10px;padding:8px;font-size:14px;color:#1d4ed8;font-weight:600}
 .bempty{color:#94a3b8;font-size:13px;padding:6px 4px 10px}
 .thumbs{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}.thumbs img{width:56px;height:56px;object-fit:cover;border-radius:8px;cursor:pointer;background:#e5e7eb}
@@ -110,13 +126,12 @@ body.nomoney .money,body.nomoney .sheet,body.nomoney #sheetLink,body.nomoney .bi
     <button data-go="new">New visitor</button>
     <button data-go="inside">Inside</button>
     <button data-go="today">Today</button>
-    <button data-tab="ask" class="on">🔎 Ask</button>
+    <button data-tab="ask" class="on" id="askTabBtn">🔎 Ask</button>
     <button data-tab="who">Who to call</button>
     <button data-tab="now">Now</button>
     <button data-tab="jobs">Works</button>
     <button data-tab="amc">AMC</button>
-    <button data-tab="mail">Mail <span id="nMail"></span></button>
-    <button data-tab="money" class="money">Money</button>
+    <button data-tab="cal">📅 Calendar</button>
     <button data-tab="contacts" id="contactsTab" class="hide">Contacts</button>
     <button data-tab="staff" id="staffTab" class="hide">Staff</button>
   </nav>
@@ -125,7 +140,17 @@ body.nomoney .money,body.nomoney .sheet,body.nomoney #sheetLink,body.nomoney .bi
 <main id="tab-ask">
   <form class="ask" id="askForm"><input id="askQ" type="search" placeholder="Ask anything… e.g. which plumber came recently?" autocomplete="off"><button type="submit">Ask</button></form>
   <div class="sugg" id="sugg"></div>
+  <!-- 3 Oct 2026 "money can be in ask rather than separate tab": Owner + Manager only (hidden for staff links) -->
+  <div class="money mbox"><div class="chips" id="mChips"><button type="button" data-mv="unpaid">💰 Unpaid</button><button type="button" data-mv="month">💰 Paid this month</button><button type="button" data-mv="pays">💰 Payments (90 days)</button><button type="button" data-form="payment">＋ Record payment</button></div>
+    <div id="mPanel" class="hide"><div class="stats" id="moneyStats"></div>
+      <div id="mUnpaid"><h2>Unpaid</h2><div id="unpaidList"></div></div>
+      <div id="mPays"><h2 id="mPaysH">Last 90 days</h2><div id="payList"></div></div>
+      <div class="add"><a href="#" class="sheet">All payments (sheet)</a></div></div></div>
   <div id="answers"></div>
+  <!-- 3 Oct 2026 19:29 "integrate email and ask … dont show money aspect to other drivers and security": Owner + Manager only -->
+  <div class="money" id="mailSec"><h2>📧 Mail to sort <span id="nMail"></span></h2>
+    <div class="muted" style="margin:0 0 8px;font-size:13px">From 98blisshome's Gmail — AMC, warranty, service and bill mails, checked every hour. Mails about the same thing are one card: one ✓ Resolve closes them all.</div>
+    <div id="mailList"></div></div>
 </main>
 
 <main id="tab-who" class="hide">
@@ -146,7 +171,13 @@ body.nomoney .money,body.nomoney .sheet,body.nomoney #sheetLink,body.nomoney .bi
 </main>
 
 <main id="tab-amc" class="hide"><div id="amcList"></div><div class="add"><a href="#" data-form="amc">+ Add AMC / warranty</a><a href="#" id="calSync" class="money">📅 Sync calendar</a><a href="#" class="sheet">All AMCs (sheet)</a></div></main>
-<main id="tab-mail" class="hide"><div class="muted" style="margin:4px 0 8px">Found in 98blisshome's Gmail: AMC, warranty, service and bill emails. Checked every hour.</div><div id="mailList"></div></main>
+<!-- 3 Oct 2026 19:42 "can you bring in the calendar app within? same 98blisshome calendar just like contacts?" -->
+<main id="tab-cal" class="hide">
+  <div class="chips" id="calRange"><button data-cr="0,14" class="on">Next 2 weeks</button><button data-cr="0,60">Next 2 months</button><button data-cr="31,0">Past month</button></div>
+  <div class="add" style="margin-top:4px"><a href="#" id="calAdd">+ Add to calendar</a><a href="#" id="calOpenG" target="_blank">Open Google Calendar</a></div>
+  <div class="muted" style="font-size:12.5px;margin:4px 0">98blisshome's calendar and the app's “98 Bliss House” calendar (AMC renewals, visits, works, dated mails) together.</div>
+  <div id="calList"><div class="empty">Loading…</div></div>
+</main>
 <main id="tab-staff" class="hide">
   <h2>Gate team — names tapped at check-in / check-out</h2><div id="teamList"></div>
   <div class="add"><a href="#" data-form="team">+ Add a name</a></div>
@@ -170,12 +201,6 @@ body.nomoney .money,body.nomoney .sheet,body.nomoney #sheetLink,body.nomoney .bi
   <div id="wStats" class="muted"></div>
   <div id="jobList"></div>
   <input id="wAddPh" type="file" accept="image/*" multiple class="hide">
-</main>
-<main id="tab-money" class="hide">
-  <div class="stats" id="moneyStats"></div>
-  <h2>Unpaid</h2><div id="unpaidList"></div>
-  <h2>Last 90 days</h2><div id="payList"></div>
-  <div class="add"><a href="#" data-form="payment">+ Record payment</a><a href="#" class="sheet">All payments (sheet)</a></div>
 </main>
 
 <div id="sheet"><div class="box" id="sheetBox"></div></div>
@@ -250,17 +275,19 @@ const when = (v) => `${d(v.check_in)} · ${tm(v.check_in)}${v.in_approx ? "~" : 
 let data = null;
 
 // tabs
-const TABS = ["ask", "who", "now", "amc", "mail", "jobs", "money", "contacts", "staff"];
+const TABS = ["ask", "who", "now", "amc", "cal", "jobs", "contacts", "staff"];
 document.querySelectorAll("nav button[data-tab]").forEach((b) => b.onclick = () => showTab(b.dataset.tab));
 // 1 Oct 2026: one tab row - the visitor tabs open the gate screen on that tab
 document.querySelectorAll("nav button[data-go]").forEach((b) => b.onclick = () => { location.href = BOOT.url + "?k=" + BOOT.k + "&p=gate#t=" + b.dataset.go; });
 function showTab(t) {
+  if (t === "mail" || t === "money") { showTab("ask"); const m = $(t === "mail" ? "mailSec" : "mChips"); if (m) setTimeout(() => m.scrollIntoView({ block: "start" }), 50); return; }   // the old Mail / Money tabs now live in Ask
   document.querySelectorAll("nav button").forEach((x) => x.classList.toggle("on", x.dataset.tab === t));
   { const on = document.querySelector("nav button.on"); if (on && on.scrollIntoView) on.scrollIntoView({ block: "nearest", inline: "center" }); }
   TABS.forEach((x) => $("tab-" + x).classList.toggle("hide", x !== t));
   if (t === "who") loadWho();
   if (t === "contacts") loadContacts();
   if (t === "jobs") loadWorks();
+  if (t === "cal") loadCal();
 }
 
 // ---- ask
@@ -349,7 +376,7 @@ function renderWho(r, quick) {
 
 // ---- one click handler for the whole page
 document.body.addEventListener("click", async (e) => {
-  const t = e.target.closest("[data-team],[data-bill],[data-hist],[data-form],[data-edit],[data-renew],[data-ask],[data-mail],[data-staff],[data-copy],[data-cact],[data-cf],[data-unrepl],[data-cur],[data-wv],[data-wg],[data-mres],[data-ws],[data-jst],[data-wph],[data-addph],.sheet,.close,#sheet,#docLink,#cRun,#calSync");
+  const t = e.target.closest("[data-team],[data-bill],[data-hist],[data-form],[data-edit],[data-renew],[data-ask],[data-mail],[data-staff],[data-copy],[data-cact],[data-cf],[data-unrepl],[data-cur],[data-wv],[data-wg],[data-mres],[data-mv],[data-renewed],[data-mgo],[data-ws],[data-jst],[data-wph],[data-addph],.sheet,.close,#sheet,#docLink,#cRun,#calSync");
   if (!t) return;
   if (t.tagName === "A" && !t.href.startsWith("tel:") && !t.href.startsWith("mailto:") && !t.href.includes("wa.me") && t.target !== "_blank") e.preventDefault();
   if (t.id === "sheet" && e.target !== t) return;
@@ -390,6 +417,12 @@ document.body.addEventListener("click", async (e) => {
     return;
   }
   if (t.dataset.mres) return resolveSheet(t.dataset.mres);
+  if (t.dataset.mv) { mView = mView === t.dataset.mv ? "" : t.dataset.mv; return showMoney(); }
+  if (t.dataset.mgo) { const c = document.getElementById("mc-" + t.dataset.mgo); if (c) c.classList.toggle("open"); return; }
+  if (t.dataset.renewed) {
+    try { const r = await call("amcRenewed", t.dataset.renewed); toast("✓ " + r.said); loadDash(); } catch (err) { toast(err.message, 1); }
+    return;
+  }
   if (t.dataset.mail) {
     try { await call("mailAction", t.dataset.id, t.dataset.mail); toast(t.dataset.mail === "ignore" ? "Ignored" : "✓ Done"); loadDash(); } catch (err) { toast(err.message, 1); }
     return;
@@ -408,16 +441,19 @@ document.body.addEventListener("click", async (e) => {
 // ---- ✓ RESOLVE a mail item (3 Oct 2026): "how will I close … if no details are available in the email like entering a date of next amc
 // due or this payment done". He says what happened; the app writes it where it belongs (AMC dates, a payment, a reminder work).
 function resolveSheet(id) {
-  const m = (data ? data.mail : []).find((x) => x.id === id); if (!m) return;
+  const ids = String(id).split(","), ms = ids.map((x) => (data ? data.mail : []).find((m) => m.id === x)).filter(Boolean), m = ms[0]; if (!m) return;
   const amcs = (data ? data.amc : []).filter((a) => a.status !== "Cancelled");
   const same = amcs.find((a) => (m.person_key && a.vendor_key === m.person_key) || (m.trade && a.category === m.trade));
   const money = data && data.money !== false;
-  openSheet(`<h3>✓ Resolve — ${esc(m.subject)}</h3><div class="muted" style="font-size:13px">${esc(m.from_name || m.from_email)} · ${d(m.received)}</div>
+  const first = same && ms.some((x) => /AMC|Bill/.test(x.kind)) ? "renewed" : "due";
+  openSheet(`<h3>✓ Resolve — ${same ? esc(same.equipment) : esc(m.subject)}</h3><div class="muted" style="font-size:13px">${ms.length > 1 ? ms.length + " mails, closed together · " : ""}${esc(m.from_name || m.from_email)} · latest ${d(m.received)}</div>
+    <div id="resFacts" class="line muted" style="font-size:13px">📧 Reading the mails for dates, amounts and payments…</div>
     <form class="f" id="resForm">
     <label>What happened?</label>
-    <div class="chips" id="resWhat">${money ? '<button type="button" data-rw="paid">💰 Payment done</button>' : ""}<button type="button" data-rw="due" class="on">📅 Next date</button><button type="button" data-rw="note">✓ Just close it</button></div>
-    <input type="hidden" name="what" value="due">
+    <div class="chips" id="resWhat"><button type="button" data-rw="renewed">🔁 AMC renewed</button>${money ? '<button type="button" data-rw="paid">💰 Payment done</button>' : ""}<button type="button" data-rw="due">📅 Next date</button><button type="button" data-rw="note">✓ Just close it</button></div>
+    <input type="hidden" name="what" value="${first}">
     <label>About which AMC / warranty?</label><select name="amc_id"><option value="">— none (not an AMC) —</option>${amcs.map((a) => `<option value="${esc(a.id)}" ${same && a.id === same.id ? "selected" : ""}>${esc(a.equipment)}</option>`).join("")}</select>
+    <div class="rRen muted" style="font-size:13px"></div>
     <div class="rDue"><label>Which date?</label><select name="field"><option value="end">AMC renews / next AMC due</option><option value="payment">Payment due</option><option value="visit">Next service visit</option></select>
       <div class="muted" style="font-size:12px">No AMC chosen → it becomes a scheduled work on that date (on the Works board and the calendar).</div></div>
     <label class="rDate">Date</label><input class="rDate" type="date" name="date" value="${esc(m.due || "")}">
@@ -425,23 +461,91 @@ function resolveSheet(id) {
       <div><label>Mode</label><select name="mode">${opts(["Bank Transfer", "UPI", "Cheque", "Cash", "Card"], "Bank Transfer")}</select></div></div>
       <div class="muted" style="font-size:12px">With an amount it is recorded under Money, with the mail's PDF as the bill.</div></div>
     <label>Note (optional)</label><textarea name="note" placeholder="e.g. renewed by phone, office paid, not needed"></textarea>
-    <button class="save" type="submit">✓ Resolve</button></form>`);
+    <button class="save" type="submit">✓ Resolve${ms.length > 1 ? " all " + ms.length : ""}</button></form>`);
   const f = $("resForm");
+  const renTxt = () => { const a = amcs.find((x) => x.id === f.amc_id.value); if (!a || !a.end_date) return "Choose the AMC — the next period is worked out from its due date."; const e = a.end_date, y = Number(e.slice(0, 4)) + 1;
+    return `Same cycle, whenever it was paid: due <b>${d(e)}</b> → next period <b>${d(addDaysYmd(e, 1))} – ${d(y + e.slice(4))}</b>.`; };
   const setW = (w) => { f.what.value = w; f.querySelectorAll("[data-rw]").forEach((b) => b.classList.toggle("on", b.dataset.rw === w));
     f.querySelector(".rDue").classList.toggle("hide", w !== "due"); f.querySelector(".rPaid").classList.toggle("hide", w !== "paid");
-    f.querySelectorAll(".rDate").forEach((x) => x.classList.toggle("hide", w === "note"));
+    f.querySelector(".rRen").classList.toggle("hide", w !== "renewed"); f.querySelector(".rRen").innerHTML = w === "renewed" ? renTxt() : "";
+    f.querySelectorAll(".rDate").forEach((x) => x.classList.toggle("hide", w === "note" || w === "renewed"));
     f.querySelector("label.rDate").textContent = w === "paid" ? "Paid on" : "Date"; if (w === "paid" && !f.date.value) f.date.value = today(); };
   f.querySelectorAll("[data-rw]").forEach((b) => (b.onclick = () => setW(b.dataset.rw)));
-  setW("due");
+  f.amc_id.onchange = () => setW(f.what.value);
+  setW(first);
   f.addEventListener("keydown", (e) => { if (e.key === "Enter" && e.target.tagName !== "TEXTAREA") e.preventDefault(); });
+  // 3 Oct 2026 19:21 "remembering date of payment etc is difficult so better you scan emails for payment details amc dates service dues":
+  // the dates, amounts and payment notes found in these mails (and in the office's own payment mails) - one tap fills them in
+  call("mailFacts", id).then((r) => {
+    const box = $("resFacts"); if (!box || !$("resForm")) return;
+    const chip = (attrs, label) => `<button type="button" class="fchip" ${attrs}>${label}</button>`;
+    const parts = [];
+    if (r.paid && r.paid.length) parts.push("<b>Payments found:</b> " + r.paid.map((p) => chip(`data-fpd="${esc(p.date)}" data-fpa="${esc(p.amount || "")}"`, "💰 " + esc(d(p.date)) + (p.amount ? " · " + esc(p.amount) : "")) + ` <span class="muted">“${esc(p.text)}”</span>`).join("<br>"));
+    if (r.dates && r.dates.length) parts.push("<b>Dates in the mails:</b> " + r.dates.map((x) => chip(`data-fd="${esc(x.date)}"`, "📅 " + esc(d(x.date)) + (x.label ? " · " + esc(x.label) : ""))).join(" "));
+    if (r.amounts && r.amounts.length) parts.push("<b>Amounts:</b> " + r.amounts.map((a) => chip(`data-fa="${esc(a)}"`, esc(a))).join(" "));
+    box.innerHTML = parts.length ? "📧 " + parts.join("<br>") + '<div style="font-size:12px">Tap one to fill it in.</div>' : "📧 No dates, amounts or payment notes found in these mails — type them in below.";
+    box.onclick = (e) => { const b = e.target.closest(".fchip"); if (!b) return;
+      if (b.dataset.fpd) { setW("paid"); f.date.value = b.dataset.fpd; f.amount.value = numIn(b.dataset.fpa); }
+      else if (b.dataset.fd) { if (f.what.value === "note" || f.what.value === "renewed") setW("due"); f.date.value = b.dataset.fd; }
+      else if (b.dataset.fa && money) { setW("paid"); f.amount.value = numIn(b.dataset.fa); } };
+  }).catch(() => { const box = $("resFacts"); if (box) box.textContent = ""; });
   f.onsubmit = async (ev) => {
     ev.preventDefault();
     const fd = Object.fromEntries(new FormData(f).entries());
-    if (fd.what !== "note" && !fd.date) return toast("Enter the date", 1);
+    if ((fd.what === "due" || fd.what === "paid") && !fd.date) return toast("Enter the date", 1);
+    if (fd.what === "renewed" && !fd.amc_id) return toast("Choose which AMC was renewed", 1);
     const btn = f.querySelector(".save"); btn.disabled = true; btn.textContent = "Saving…";
-    try { const r = await call("mailResolve", id, fd); toast("✓ Resolved — " + r.said); closeSheet(); loadDash(); if (!$("tab-jobs").classList.contains("hide")) loadWorks(); }
+    try { const r = await call("mailResolve", id, fd); toast("✓ Resolved" + (r.closed > 1 ? " " + r.closed + " mails" : "") + " — " + r.said); closeSheet(); loadDash(); if (!$("tab-jobs").classList.contains("hide")) loadWorks(); }
     catch (err) { toast(err.message, 1); btn.disabled = false; btn.textContent = "✓ Resolve"; }
   };
+}
+// ---- 📅 calendar inside the app (3 Oct 2026)
+let calRange = "0,14", calSeq = 0;
+async function loadCal() {
+  document.querySelectorAll("#calRange [data-cr]").forEach((b) => b.classList.toggle("on", b.dataset.cr === calRange));
+  const [back, ahead] = calRange.split(",").map(Number), mine = ++calSeq, ck = "cal" + calRange;
+  const show = (r) => {
+    $("calOpenG").href = r.url;
+    const list = back && !ahead ? r.days.filter((x) => x.date <= r.today).reverse() : r.days.filter((x) => x.date >= r.today);
+    $("calList").innerHTML = list.length ? list.map((x) => {
+      const dt0 = new Date(x.date + "T12:00:00+05:30"), isToday = x.date === r.today;
+      return `<div class="cday${isToday ? " today" : ""}"><div class="cdh"><b>${dt0.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short", timeZone: "Asia/Kolkata" })}</b>${isToday ? " · today" : ""}</div>
+        ${x.events.map((e) => `<div class="cev ${e.app ? "app" : "main"}"><div class="ct">${e.time ? `<span class="muted">${esc(e.time)}</span> ` : ""}<b>${esc(e.title)}</b></div>${e.desc ? `<div class="cd">${esc(e.desc)}</div>` : ""}<div class="cc">${esc(e.cal)}</div></div>`).join("")}</div>`;
+    }).join("") : '<div class="empty">Nothing in the calendar for this period.</div>';
+  };
+  { const c = lastCopy(ck); if (c && mine === calSeq) show(c); }
+  try { const r = await call("calendarView", back, ahead); if (mine !== calSeq) return; lastCopy(ck, r); show(r); }
+  catch (err) { if (mine === calSeq) $("calList").innerHTML = `<div class="empty red">${esc(err.message)}</div>`; }
+}
+$("calRange").onclick = (e) => { const b = e.target.closest("[data-cr]"); if (!b) return; calRange = b.dataset.cr; loadCal(); };
+$("calAdd").onclick = (e) => {
+  e.preventDefault();
+  openSheet(`<h3>+ Add to calendar</h3><form class="f" id="calForm"><label>What</label><input name="title" required placeholder="e.g. Kent RO service, Lift AMC visit, Pest control">
+    <label>Date</label><input type="date" name="date" value="${esc(today())}" required><label>Note (optional)</label><textarea name="note"></textarea>
+    <div class="muted" style="font-size:12px">Goes into the “98 Bliss House” calendar with a reminder the day before. No guests, no emails.</div>
+    <button class="save" type="submit">Add</button></form>`);
+  const f = $("calForm");
+  f.addEventListener("keydown", (ev) => { if (ev.key === "Enter" && ev.target.tagName !== "TEXTAREA") ev.preventDefault(); });
+  f.onsubmit = async (ev) => {
+    ev.preventDefault(); const fd = Object.fromEntries(new FormData(f).entries()); const btn = f.querySelector(".save"); btn.disabled = true; btn.textContent = "Adding…";
+    try { const r = await call("addCalendarEvent", fd); toast("✓ Added to the calendar: " + r.title + " · " + d(r.date)); closeSheet(); loadCal(); }
+    catch (err) { toast(err.message, 1); btn.disabled = false; btn.textContent = "Add"; }
+  };
+};
+
+// ---- 💰 money inside Ask (3 Oct 2026)
+let mView = "", MAILGROUPS = {};
+const numIn = (t) => (String(t || "").match(/\d[\d,]*(?:\.\d{1,2})?/) || [""])[0].replace(/,/g, "");   // "Rs. 1,44,855" -> "144855"
+function showMoney() {
+  document.querySelectorAll("#mChips [data-mv]").forEach((b) => b.classList.toggle("on", b.dataset.mv === mView));
+  $("mPanel").classList.toggle("hide", !mView);
+  if (!mView || !data) return;
+  $("mUnpaid").classList.toggle("hide", mView !== "unpaid");
+  $("mPays").classList.toggle("hide", mView === "unpaid");
+  const mon = String(data.today || "").slice(0, 7);
+  const ps = mView === "month" ? data.payments.filter((p) => String(p.date).slice(0, 7) === mon) : data.payments;
+  $("mPaysH").textContent = mView === "month" ? "Paid this month" : "Last 90 days";
+  $("payList").innerHTML = ps.length ? `<table><tr><th>Date</th><th>Vendor</th><th>Amount</th><th>Mode</th></tr>${ps.map((p) => `<tr><td>${d(p.date)}</td><td>${p.vendor_key ? `<a href="#" data-hist="${esc(p.vendor_key)}">${esc(p.vendor_name || "")}</a>` : esc(p.notes ? p.notes.split(" — ")[0].slice(0, 40) : "")}</td><td>${inr(p.amount)}</td><td>${esc(p.mode)}${p.bill ? " " + billBtn(p.bill, "Bill") : ""}</td></tr>`).join("")}</table>` : '<div class="empty">No payments recorded.</div>';
 }
 function confirmBox(q) { return window.confirm(q); }
 function closeSheet() { $("sheet").classList.remove("open"); }
@@ -787,6 +891,9 @@ function renderWorks() {
 // The chips on top show one group's works only ("FCML" = everything FCML has to do, whichever FCML man comes).
 const grpOf = (j) => j.group || "none";   // "none" = not assigned yet ("" is Everyone)
 const grpTitle = (j) => j.group_title || "Not assigned yet";
+// a fixed colour per group: [strong, soft] - the same group always gets the same colour
+const GRP_COLOURS = [["#2563eb", "#eff6ff"], ["#059669", "#ecfdf5"], ["#d97706", "#fffbeb"], ["#7c3aed", "#f5f3ff"], ["#db2777", "#fdf2f8"], ["#0891b2", "#ecfeff"], ["#65a30d", "#f7fee7"], ["#dc2626", "#fef2f2"]];
+const grpColour = (g) => { if (g === "none") return ["#64748b", "#f8fafc"]; let h = 0; for (const ch of String(g)) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return GRP_COLOURS[h % GRP_COLOURS.length]; };
 function renderBoard(q, open, done) {
   const today = (W && W.today) || "";
   let all = open.concat(done.filter((j) => !j.completed_on || j.completed_on >= addDaysYmd(today, -30)));
@@ -796,7 +903,7 @@ function renderBoard(q, open, done) {
   const gs = Object.keys(counts).sort((a, b) => (a === "none" ? 1 : b === "none" ? -1 : 0) || counts[b] - counts[a]);
   if (wGroup && !(wGroup in counts) && !all.some((j) => grpOf(j) === wGroup)) wGroup = "";
   $("wgroup").innerHTML = `<button data-wg="" class="${wGroup ? "" : "on"}">Everyone · ${open.length}</button>` +
-    gs.map((g) => `<button data-wg="${esc(g)}" class="${g === wGroup ? "on" : ""}">${esc(titles[g].replace(/ \(anyone from .*\)$/, "").replace(/ — any .*$/, ""))} · ${counts[g]}</button>`).join("");
+    gs.map((g) => `<button data-wg="${esc(g)}" class="${g === wGroup ? "on" : ""}" style="border-left-color:${grpColour(g)[0]}">${esc(titles[g].replace(/ \(anyone from .*\)$/, "").replace(/ — any .*$/, ""))} · ${counts[g]}</button>`).join("");
   if (wGroup !== "") all = all.filter((j) => grpOf(j) === wGroup);
   $("wStats").textContent = `${open.length} to do in all · ${open.filter((j) => j.blocked).length} waiting on other work · ${done.length} done so far`;
   const cols = [
@@ -808,25 +915,36 @@ function renderBoard(q, open, done) {
   ];
   const pre = wGroup.startsWith("co:") ? { vendor_company: (all[0] || {}).vendor_company || wGroup.slice(3).toUpperCase() } : wGroup.startsWith("tr:") ? { trade: wGroup.slice(3) }
     : wGroup && wGroup !== "none" ? { vendor_key: wGroup, vendor_name: ((all[0] || {}).vendor_name) || "" } : {};
-  const card = (j) => {
+  // 3 Oct 2026 19:20 "when 2 or more works are assigned instead of seperate card can everything be under one card like trello … give
+  // some colour": ONE card per group in each column (all FCML works together), each work a checklist line you can tick, start or edit
+  const item = (j) => {
     const late = OPEN.includes(j.status) && j.scheduled_on && j.scheduled_on < today;
-    const next = j.status === "Open" || j.status === "Scheduled" ? `<button data-jst="In Progress" data-id="${esc(j.id)}">▶ Started</button>` : "";
-    return `<div class="bcard${late ? " late" : ""}">
-      ${j.priority && j.priority !== "Normal" ? `<span class="pri ${esc(j.priority)}">${esc(j.priority.toUpperCase())}</span> ` : ""}<span class="bt">${desk("job", j.id, j.subject)}</span>
-      <div class="bm">${esc([j.place, j.scheduled_on && j.status !== "Done" ? (late ? "⚠ was due " : "due ") + dueTxt(j.scheduled_on) : "", j.status === "Done" ? "done " + dueTxt(j.completed_on) + (j.done_by_name ? " by " + j.done_by_name : "") : ""].filter(Boolean).join(" · "))}</div>
-      ${rptLabel(j)}
-      ${j.blocked ? `<div class="wait">⏳ after: ${j.waits_for.filter((w) => OPEN.includes(w.status)).map((w) => esc(w.subject)).join("; ")}</div>` : ""}
-      <div><span class="bg">${esc(grpTitle(j))}${j.vendor_company && j.vendor_name ? " → " + esc(j.vendor_name) : ""}</span>${(j.photos || []).length ? ` <span class="bm">📷 ${j.photos.length}</span>` : ""}</div>
-      <div class="acts">${OPEN.includes(j.status) ? next + `<button data-jst="Done" data-id="${esc(j.id)}">✓ Done</button>` : `<button data-jst="Open" data-id="${esc(j.id)}">↺ Reopen</button>`}<button data-edit="job" data-id="${esc(j.id)}">Edit</button></div></div>`;
+    return `<div class="bitem${late ? " late" : ""}">
+      ${OPEN.includes(j.status) ? `<button class="tick" data-jst="Done" data-id="${esc(j.id)}" title="Done">○</button>` : `<button class="tick on" data-jst="Open" data-id="${esc(j.id)}" title="Reopen">✓</button>`}
+      <div class="bi">${j.priority && j.priority !== "Normal" ? `<span class="pri ${esc(j.priority)}">${esc(j.priority.toUpperCase())}</span> ` : ""}${desk("job", j.id, j.subject)}${rptLabel(j)}
+        <div class="bm">${esc([j.place, j.vendor_company && j.vendor_name ? "→ " + j.vendor_name : "", j.scheduled_on && j.status !== "Done" ? (late ? "⚠ was due " : "due ") + dueTxt(j.scheduled_on) : "",
+          j.status === "Done" ? "done " + dueTxt(j.completed_on) + (j.done_by_name ? " by " + j.done_by_name : "") : "", j.added_by ? "added by " + j.added_by : ""].filter(Boolean).join(" · "))}${(j.photos || []).length ? " · 📷 " + j.photos.length : ""}</div>
+        ${j.blocked ? `<div class="wait">⏳ after: ${j.waits_for.filter((w) => OPEN.includes(w.status)).map((w) => esc(w.subject)).join("; ")}</div>` : ""}</div>
+      ${j.status === "Open" || j.status === "Scheduled" ? `<button class="go1" data-jst="In Progress" data-id="${esc(j.id)}" title="Started">▶</button>` : ""}</div>`;
+  };
+  const preOf = (g, j) => g.startsWith("co:") ? { vendor_company: j.vendor_company } : g.startsWith("tr:") ? { trade: g.slice(3) } : g === "none" ? {} : { vendor_key: g, vendor_name: j.vendor_name };
+  const gcard = (g, js, colId) => {
+    const c = grpColour(g), j0 = js[0];
+    return `<div class="bcard gc" style="--gc:${c[0]};--gb:${c[1]}"><div class="gh"><span>${esc(grpTitle(j0).replace(/ \(anyone from (.*)\)$/, " · anyone from $1"))}</span><span class="gn">${js.length}</span></div>
+      ${js.map(item).join("")}
+      ${colId !== "done" ? `<button class="gadd" data-form="job" data-pre='${esc(JSON.stringify(Object.assign(colId === "sched" ? { status: "Scheduled" } : {}, preOf(g, j0))))}'>＋ add to this card</button>` : ""}</div>`;
   };
   $("jobList").innerHTML = `<div class="board">${cols.map(([id, name, test]) => {
     const js = all.filter(test).sort((a, b) => (PRI[a.priority] ?? 2) - (PRI[b.priority] ?? 2) || String(a.scheduled_on || a.reported_on).localeCompare(String(b.scheduled_on || b.reported_on)));
     if (id === "done") js.sort((a, b) => String(b.completed_on).localeCompare(String(a.completed_on)));
     if (id === "wait" && !js.length) return "";
-    return `<div class="bcol"><h5>${esc(name)} <span>${js.length}</span></h5>${js.map(card).join("") || `<div class="bempty">Nothing here.</div>`}
+    const byG = {}, gOrder = [];
+    js.forEach((j) => { const g = grpOf(j); if (!byG[g]) { byG[g] = []; gOrder.push(g); } byG[g].push(j); });
+    gOrder.sort((a, b) => (a === "none" ? 1 : b === "none" ? -1 : 0) || byG[b].length - byG[a].length);
+    return `<div class="bcol"><h5>${esc(name)} <span>${js.length}</span></h5>${gOrder.map((g) => gcard(g, byG[g], id)).join("") || `<div class="bempty">Nothing here.</div>`}
       ${id === "todo" ? `<button class="badd" data-form="job" data-pre='${esc(JSON.stringify(pre))}'>+ Add a work${wGroup && wGroup !== "none" ? " for " + esc(($("wgroup").querySelector("button.on") || {}).textContent.replace(/ · \d+$/, "")) : ""}</button>` : ""}
       ${id === "sched" ? `<button class="badd" data-form="job" data-pre='${esc(JSON.stringify(Object.assign({ status: "Scheduled" }, pre)))}'>+ Schedule a work (or a repeat: 1 month, 2 months…)</button>` : ""}</div>`;
-  }).join("")}</div><div class="muted" style="font-size:12px;margin-top:2px">Swipe sideways for the other columns. Tap a chip above to see one group only — e.g. 🏢 FCML: every FCML work, whichever FCML man comes.</div>`;
+  }).join("")}</div><div class="muted" style="font-size:12px;margin-top:2px">One card per group — all of FCML's works together, each with ○ to tick done and ▶ to start; tap a work to edit it. Swipe sideways for the other columns.</div>`;
 }
 const addDaysYmd = (ymd, n) => { if (!ymd) return ""; const t = new Date(ymd + "T12:00:00+05:30"); t.setDate(t.getDate() + n); return t.toISOString().slice(0, 10); };
 
@@ -880,6 +998,7 @@ function showDash(x) {
   const today = x.today;
   $("me").textContent = BOOT.role === "owner" ? "You · Owner" : BOOT.name + " · " + (BOOT.role === "manager" ? "Admin" : (BOOT.staff_role || "Staff") + " (no money)");
   document.body.classList.toggle("nomoney", x.money === false);
+  $("askTabBtn").textContent = x.money === false ? "🔎 Ask" : "🔎 Ask & Mail";
   const admin = BOOT.role === "owner" || BOOT.role === "manager";   // 2 levels (28 Sep 2026): Admin = owner + Bliss Manager
   $("staffTab").classList.toggle("hide", !admin);
   $("contactsTab").classList.toggle("hide", !admin);
@@ -909,26 +1028,41 @@ function showDash(x) {
         ${a.vendor_key ? `<button data-hist="${esc(a.vendor_key)}">History</button>` : ""}
         ${a.kind !== "Warranty" ? `<button data-form="job" data-pre='${esc(JSON.stringify({ amc_id: a.id, vendor_key: a.vendor_key, trade: a.category, job_type: "AMC Visit", status: "Scheduled", subject: a.equipment + " - AMC visit", scheduled_on: a.next_visit_due }))}'>Visit</button>` : ""}
         <button data-edit="amc" data-id="${esc(a.id)}">✏️ Dates</button><button class="money" data-form="payment" data-pre='${esc(JSON.stringify({ amc_id: a.id, vendor_key: a.vendor_key }))}'>Pay</button>
-        ${a.status === "Renewal Due" || a.status === "Expired" ? `<button data-renew="${esc(a.id)}">Renew</button>` : ""}</div></div>`;
+        ${a.kind !== "Warranty" ? `<button data-renewed="${esc(a.id)}" title="Next period = same dates one year on">✓ Renewed</button>` : ""}</div></div>`;
   }).join("") : '<div class="empty">No AMC or warranty yet — add them, or pick them from the Mail tab.</div>';
 
   // Mail finds
-  $("nMail").textContent = x.mail.length ? "(" + x.mail.length + ")" : "";
-  $("mailList").innerHTML = x.mail.length ? x.mail.map((m) => {
-    const phone = String(m.phones || "").split(", ")[0] || "";
+
+  // 3 Oct 2026 "repeated emails … all pertaining to one thing like amc, payment … summarize and take one resolve":
+  // one card per subject - all mails about the same AMC (Daikin invoice + reminder + renewal), else per sender + trade
+  const mg = {}, mOrder = [];
+  x.mail.forEach((m) => {
     const same = x.amc.find((a) => a.status !== "Cancelled" && ((m.person_key && a.vendor_key === m.person_key) || (m.trade && a.category === m.trade)));
+    const dom = String(m.from_email || "").split("@")[1] || m.from_name || "";
+    const key = same ? "amc:" + same.id : "from:" + dom.replace(/^(mail|mailer|noreply|info)\./, "") + "|" + (m.trade || "");
+    if (!mg[key]) { mg[key] = { key, same, mails: [] }; mOrder.push(key); }
+    mg[key].mails.push(m);
+  });
+  MAILGROUPS = mg;
+  $("nMail").textContent = mOrder.length ? "(" + mOrder.length + ")" : "";
+  $("mailList").innerHTML = mOrder.length ? mOrder.map((key, gi) => {
+    const g = mg[key], m = g.mails[0], same = g.same, ids = g.mails.map((x) => x.id).join(",");
+    const phone = g.mails.map((x) => String(x.phones || "").split(", ")[0]).find(Boolean) || "";
     const amcPre = { kind: m.kind === "Warranty" ? "Warranty" : "AMC", category: m.trade || "Other", equipment: (m.trade ? m.trade + " - " : "") + (m.from_name || m.from_email),
       contact_name: m.from_name, contact_email: m.from_email, contact_phone: phone, end_date: m.due, mail_id: m.id, mail_link: m.link, vendor_key: m.person_key };
-    const upd = same ? Object.assign({}, same, { end_date: m.due || same.end_date, mail_id: m.id, mail_link: m.link }) : null;
-    return `<div class="card"><div><span class="badge ${m.kind === "Warranty" ? "Warranty" : m.kind.startsWith("AMC") ? "Renewal" : "in"}">${esc(m.kind)}</span> ${m.trade ? `<span class="badge">${esc(m.trade)}</span>` : ""}</div>
-      <div class="line"><b>${esc(m.subject)}</b></div>
-      <div class="muted">${esc([m.from_name, m.from_email].filter(Boolean).join(" · "))} · ${d(m.received)}${m.person_name ? " · " + esc(m.person_name) : " · new sender"}</div>
-      ${m.dates ? `<div class="line">Dates: ${m.due ? `<b>${d(m.due)}</b> · ` : ""}<span class="muted">${esc(m.dates)}</span></div>` : ""}
-      ${m.phones ? `<div class="line">Phones: ${telLinks(esc(m.phones))}</div>` : ""}
-      <div class="acts">${m.kind === "AMC / Renewal" || m.kind === "Warranty" ? `<button data-form="amc" data-pre='${esc(JSON.stringify(amcPre))}'>Make ${m.kind === "Warranty" ? "warranty" : "AMC"}</button>` : ""}
-        ${upd ? `<button data-form="amc" data-pre='${esc(JSON.stringify(upd))}'>Update ${esc(same.equipment.slice(0, 14))}</button>` : ""}
+    const kinds = [...new Set(g.mails.map((x) => x.kind))];
+    const dues = [...new Set(g.mails.map((x) => x.due).filter(Boolean))].sort();
+    return `<div class="card mcard" id="mc-${gi}"><div>${kinds.map((k) => `<span class="badge ${k === "Warranty" ? "Warranty" : k.startsWith("AMC") ? "Renewal" : "in"}">${esc(k)}</span>`).join(" ")} ${m.trade ? `<span class="badge">${esc(m.trade)}</span>` : ""}</div>
+      <div class="line"><b>${same ? "🗂 " + esc(same.equipment) : esc(m.subject)}</b>${g.mails.length > 1 ? `<span class="mcount">${g.mails.length} mails</span>` : ""}</div>
+      <div class="muted">${esc([m.from_name, m.from_email].filter(Boolean).join(" · "))} · latest ${d(m.received)}${same ? " · AMC on record: renews <b>" + d(same.end_date) + "</b>" : m.person_name ? " · " + esc(m.person_name) : " · new sender"}</div>
+      ${dues.length ? `<div class="line">Dates in the mails: ${dues.map((x) => "<b>" + d(x) + "</b>").join(" · ")}</div>` : ""}
+      ${phone ? `<div class="line">Phone: ${telLinks(esc(phone))}</div>` : ""}
+      <div class="mlist">${g.mails.map((x) => `<div>${d(x.received)} · ${esc(x.subject)} <a href="${esc(x.link)}" target="_blank">Open</a></div>`).join("")}</div>
+      <div class="acts"><button class="mres" data-mres="${esc(ids)}">✓ Resolve${g.mails.length > 1 ? " all " + g.mails.length : ""}…</button>
+        ${g.mails.length > 1 ? `<button data-mgo="${gi}">Show the ${g.mails.length} mails</button>` : `<a href="${esc(m.link)}" target="_blank">Open</a>`}
+        ${!same && (m.kind === "AMC / Renewal" || m.kind === "Warranty") ? `<button data-form="amc" data-pre='${esc(JSON.stringify(amcPre))}'>Make ${m.kind === "Warranty" ? "warranty" : "AMC"}</button>` : ""}
         ${!m.person_key && phone ? `<button data-form="person" data-pre='${esc(JSON.stringify({ mail_id: m.id, mobile: phone, name: m.from_name, email: m.from_email, trades: m.trade }))}'>Add contact</button>` : ""}
-        <a href="${esc(m.link)}" target="_blank">Open</a><button class="mres" data-mres="${esc(m.id)}">✓ Resolve…</button><button data-mail="ignore" data-id="${esc(m.id)}">Ignore</button></div></div>`;
+        <button data-mail="ignore" data-id="${esc(ids)}">Ignore</button></div></div>`;
   }).join("") : '<div class="empty">Nothing new from mail.</div>';
 
   if (!$("tab-jobs").classList.contains("hide")) loadWorks();
@@ -940,7 +1074,7 @@ function showDash(x) {
   const unpaid = x.unpaid_jobs.map((j) => [desk("job", j.id, j.subject), esc(j.vendor_name || ""), `<span class="red">${inr(j.balance)}</span>`])
     .concat(x.amc.filter((a) => a.amount && a.balance > 0).map((a) => [desk("amc", a.id, "AMC: " + a.equipment), esc(a.vendor_name || ""), `<span class="red">${inr(a.balance)}</span>`]));
   $("unpaidList").innerHTML = unpaid.length ? `<table><tr><th>For</th><th>Vendor</th><th>Due</th></tr>${unpaid.map((r) => `<tr>${r.map((c) => `<td>${c}</td>`).join("")}</tr>`).join("")}</table>` : '<div class="empty">Nothing unpaid.</div>';
-  $("payList").innerHTML = x.payments.length ? `<table><tr><th>Date</th><th>Vendor</th><th>Amount</th><th>Mode</th></tr>${x.payments.map((p) => `<tr><td>${d(p.date)}</td><td>${p.vendor_key ? `<a href="#" data-hist="${esc(p.vendor_key)}">${esc(p.vendor_name || "")}</a>` : esc(p.notes ? p.notes.split(" — ")[0].slice(0, 30) : "")}</td><td>${inr(p.amount)}</td><td>${esc(p.mode)}${p.bill ? " " + billBtn(p.bill, "Bill") : ""}</td></tr>`).join("")}</table>` : '<div class="empty">No payments recorded.</div>';
+  setTimeout(showMoney, 0);
 
   if (admin) {
     $("teamList").innerHTML = (x.team || []).length ? x.team.map((m) => `<div class="card"><div class="top"><div><b class="n">${esc(m.name)}</b> <span class="lvl">${esc(m.role || "")}</span>
@@ -962,7 +1096,7 @@ $("gateLink").href = BOOT.url + "?k=" + BOOT.k + "&p=gate";
 $("sheetLink").onclick = (e) => { e.preventDefault(); if (data) window.open(data.sheet_url, "_blank"); };
 $("trades").innerHTML += BOOT.trades.map((t) => `<button data-t="${esc(t)}">${esc(t)}</button>`).join("");
 loadDash();
-{ const m = location.hash.match(/t=(\w+)/); if (m && TABS.indexOf(m[1]) >= 0) showTab(m[1]); }
+{ const m = location.hash.match(/t=(\w+)/); if (m && (TABS.indexOf(m[1]) >= 0 || m[1] === "mail" || m[1] === "money")) showTab(m[1]); }
 })();
 </script>
 </body>
