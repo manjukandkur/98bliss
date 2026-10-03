@@ -55,6 +55,9 @@ textarea{min-height:70px;font-size:16px}
 .photo{display:flex;gap:10px;align-items:center}
 .photo label.btn{margin:0;flex:1;text-align:center;padding:14px;border:2px dashed #94a3b8;border-radius:12px;color:var(--ink);font-size:15px;background:#fff}
 .photo img{width:70px;height:70px;object-fit:cover;border-radius:10px;display:none}
+/* 3 Oct 2026 22:25 "ask should be available like floating on every page … every page is better" */
+#fab{position:fixed;right:14px;bottom:calc(86px + env(safe-area-inset-bottom));z-index:15;border:0;border-radius:999px;background:#1d4ed8;color:#fff;font-weight:700;font-size:16px;padding:13px 18px;box-shadow:0 6px 18px rgba(29,78,216,.35)}
+#fab.hide{display:none}
 .go{position:fixed;left:0;right:0;bottom:0;padding:10px 16px calc(10px + env(safe-area-inset-bottom));background:linear-gradient(transparent,var(--bg) 30%)}
 .go button{width:100%;max-width:608px;display:block;margin:0 auto;padding:16px;border:0;border-radius:14px;background:var(--ok);color:#fff;font-size:19px;font-weight:700}
 .go button:disabled{opacity:.5}
@@ -106,8 +109,9 @@ textarea{min-height:70px;font-size:16px}
 .wacts button.ok{background:var(--ok);color:#fff;border-color:var(--ok);font-weight:600}
 .sheet{position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:20;display:none;align-items:flex-end;justify-content:center}
 .sheet.open{display:flex}
-.sheet .box{background:#fff;width:100%;max-width:640px;max-height:92vh;overflow:auto;border-radius:16px 16px 0 0;padding:14px 16px calc(20px + env(safe-area-inset-bottom));position:relative}
-.sheet .close{position:absolute;right:10px;top:8px;border:0;background:#f1f5f9;border-radius:999px;width:34px;height:34px;font-size:20px}
+/* 3 Oct 2026 22:28 "Unable to close or go back": below the status bar, × always on screen, Back swipe / Escape close it */
+.sheet .box{background:#fff;width:100%;max-width:640px;max-height:calc(100vh - env(safe-area-inset-top) - 14px);max-height:calc(100dvh - env(safe-area-inset-top) - 14px);overflow:auto;-webkit-overflow-scrolling:touch;border-radius:16px 16px 0 0;padding:14px 16px calc(20px + env(safe-area-inset-bottom));position:relative}
+.sheet .close{position:sticky;top:0;float:right;z-index:5;border:0;background:#1e293b;color:#fff;border-radius:999px;width:40px;height:40px;font-size:20px;box-shadow:0 2px 8px rgba(0,0,0,.25)}
 .sheet h3{margin:4px 40px 6px 0}
 .sheet .save{width:100%;margin-top:14px;padding:14px;border:0;border-radius:12px;background:var(--ok);color:#fff;font-size:17px;font-weight:700}
 .wphoto{display:flex;gap:10px;align-items:center}.wphoto label.pbtn{margin:0;flex:1;text-align:center;padding:12px;border:2px dashed #94a3b8;border-radius:12px;color:var(--ink);font-size:15px}
@@ -136,6 +140,7 @@ textarea{min-height:70px;font-size:16px}
   </nav>
 </header>
 <div id="toast"></div>
+<button id="fab" type="button" class="hide" aria-label="Ask">🔎 Ask</button>
 
 <main id="tab-new">
   <div class="types">
@@ -282,7 +287,7 @@ document.querySelectorAll("nav button[data-go]").forEach((b) => {
   b.onclick = () => { location.href = OWNER_URL + "#t=" + b.dataset.go; };
 });
 // 29 Sep 2026: "Better give ask in the main menu it is fantastic" - Ask is a main tab for every link that may see details
-if (BOOT.full) { $("askTab").classList.remove("hide"); $("allDetails").href = OWNER_URL; }
+if (BOOT.full) { $("askTab").classList.remove("hide"); $("allDetails").href = OWNER_URL; $("fab").classList.remove("hide"); }
 $("whoHint").textContent = "Entered by " + BOOT.name + (BOOT.staff_role && BOOT.staff_role !== BOOT.name ? " (" + BOOT.staff_role + ")" : "");
 // ---- who is doing it, by NAME (28 Sep 2026): one shared link, each check-in and check-out records the person
 const TEAM = BOOT.team || [];
@@ -318,6 +323,7 @@ function showTab(t) {
   document.querySelectorAll("nav button").forEach((b) => b.classList.toggle("on", b.dataset.tab === t));
   { const on = document.querySelector("nav button.on"); if (on && on.scrollIntoView) on.scrollIntoView({ block: "nearest", inline: "center" }); }
   ["new", "inside", "today", "ask"].forEach((x) => $("tab-" + x).classList.toggle("hide", x !== t));
+  $("fab").classList.toggle("hide", t === "ask" || $("askTab").classList.contains("hide"));   // floating Ask on every page (3 Oct 2026)
   if (t === "ask") setTimeout(() => $("askQ").focus(), 50);
   if (t === "inside") loadInside();
   if (t === "today") (seg === "works" ? loadWorks() : loadToday());
@@ -335,14 +341,14 @@ $("askForm").onsubmit = (e) => { e.preventDefault(); doAsk($("askQ").value); };
   q.addEventListener("pointerup", function (e) { if (fresh) { fresh = false; e.preventDefault(); all(); } });   /* the tap itself would otherwise drop the selection (desktop, iPhone) */
   q.addEventListener("blur", function () { fresh = false; }); })();
 let askBusy = "", askAt = 0;
-async function doAsk(q) {
+async function doAsk(q, target) {
   q = String(q || "").trim(); if (!q) return;
   // 1 Oct 2026: the same question came back twice (Ask button + keyboard Go): the same words again within 10 s = no second answer
   if (askBusy === q && Date.now() - askAt < 10000) return;
   askBusy = q; askAt = Date.now();
   $("askQ").value = q; $("askQ").blur();
   const box = document.createElement("div"); box.className = "ans"; box.innerHTML = `<div class="q">${esc(q)}</div><div class="hint">Looking…</div>`;
-  $("answers").prepend(box);
+  (target || $("answers")).prepend(box);
   try {
     const r = await call("ask", q);
     box.innerHTML = `<div class="q">${esc(q)}${r.heading ? " · " + esc(r.heading) : ""}</div>` + r.lines.map((l) => `<p>${telLinks(l)}</p>`).join("") +
@@ -352,6 +358,11 @@ async function doAsk(q) {
       ((r.links || []).length ? `<div class="acts">${r.links.slice(0, 6).map((l) => `<a href="${esc(l.url)}" target="_blank">✉️ ${esc(l.label.slice(0, 28))}</a>`).join("")}</div>` : "");
   } catch (e) { askBusy = ""; box.innerHTML = `<div class="q">${esc(q)}</div><p style="color:var(--bad)">${esc(e.message)}</p>`; }
 }
+$("fab").onclick = () => {
+  openSheet(`<h3>🔎 Ask anything</h3><form class="ask" id="fabForm" style="margin-top:8px"><input id="fabQ" type="search" enterkeyhint="search" autocomplete="off" placeholder="e.g. which plumber came last? pending works?"><button type="submit">Ask</button></form><div id="fabAns"></div>`);
+  $("fabForm").onsubmit = (e) => { e.preventDefault(); const q = $("fabQ").value; $("fabQ").blur(); doAsk(q, $("fabAns")); };
+  setTimeout(() => $("fabQ").focus(), 60);
+};
 let seg = "vis";
 $("tSeg").onclick = (e) => {
   const b = e.target.closest("button"); if (!b) return;
@@ -669,8 +680,13 @@ let W = null, wView = "person", wStat = "pending", wSeq = 0, wAddFor = "", wTime
 const OPEN = ["Open", "Scheduled", "In Progress"], PRI = { Urgent: 0, High: 1, Normal: 2, Low: 3 };
 const dd = (s) => s ? new Date(s + "T00:00:00+05:30").toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "2-digit" }) : "";
 const opts = (list, v) => list.map((x) => `<option ${x === v ? "selected" : ""}>${esc(x)}</option>`).join("");
-function openSheet(html) { $("sheetBox").innerHTML = '<button class="close" type="button">×</button>' + html; $("sheet").classList.add("open"); }
-function closeSheet() { $("sheet").classList.remove("open"); }
+function openSheet(html) { $("sheetBox").innerHTML = '<button class="close" type="button" aria-label="Close">×</button>' + html; $("sheetBox").scrollTop = 0;
+  if (!$("sheet").classList.contains("open")) { try { history.pushState({ sheet: 1 }, ""); } catch (e) { } } $("sheet").classList.add("open"); }
+function closeSheet() { const was = $("sheet").classList.contains("open"); $("sheet").classList.remove("open"); if (was && history.state && history.state.sheet) { popMine++; history.back(); } }
+// phone Back swipe / Escape close an open sheet (3 Oct 2026 22:28 "Unable to close or go back")
+let popMine = 0;   // Back steps the app itself made when a sheet was closed with × - they must not close a sheet opened since
+window.addEventListener("popstate", () => { if (popMine > 0) { popMine--; return; } if ($("sheet").classList.contains("open")) $("sheet").classList.remove("open"); });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && $("sheet").classList.contains("open")) closeSheet(); });
 $("sheet").addEventListener("click", (e) => { if (e.target.id === "sheet" || e.target.closest(".close")) closeSheet(); });
 async function loadWorks() {
   const mine = ++wSeq;
