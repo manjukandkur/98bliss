@@ -785,7 +785,7 @@ function renderWorks() {
 // ---- ▦ BOARD (3 Oct 2026): "I want the works to work like Trello" - columns To do / Waiting / Scheduled / In progress / Done.
 // Each card says WHO it is for: 🏢 FCML (anyone from FCML), 🔧 any electrician, or one person (Dilip) - never forced.
 // The chips on top show one group's works only ("FCML" = everything FCML has to do, whichever FCML man comes).
-const grpOf = (j) => j.group || "";
+const grpOf = (j) => j.group || "none";   // "none" = not assigned yet ("" is Everyone)
 const grpTitle = (j) => j.group_title || "Not assigned yet";
 function renderBoard(q, open, done) {
   const today = (W && W.today) || "";
@@ -793,7 +793,7 @@ function renderBoard(q, open, done) {
   if (q) all = all.filter((j) => [j.place, j.subject, j.vendor_name, j.vendor_company, j.done_by_name, j.description, j.trade, j.group_title].join(" ").toLowerCase().includes(q));
   const counts = {}, titles = {};
   open.forEach((j) => { counts[grpOf(j)] = (counts[grpOf(j)] || 0) + 1; titles[grpOf(j)] = grpTitle(j); });
-  const gs = Object.keys(counts).sort((a, b) => (a === "" ? 1 : b === "" ? -1 : 0) || counts[b] - counts[a]);
+  const gs = Object.keys(counts).sort((a, b) => (a === "none" ? 1 : b === "none" ? -1 : 0) || counts[b] - counts[a]);
   if (wGroup && !(wGroup in counts) && !all.some((j) => grpOf(j) === wGroup)) wGroup = "";
   $("wgroup").innerHTML = `<button data-wg="" class="${wGroup ? "" : "on"}">Everyone · ${open.length}</button>` +
     gs.map((g) => `<button data-wg="${esc(g)}" class="${g === wGroup ? "on" : ""}">${esc(titles[g].replace(/ \(anyone from .*\)$/, "").replace(/ — any .*$/, ""))} · ${counts[g]}</button>`).join("");
@@ -807,7 +807,7 @@ function renderBoard(q, open, done) {
     ["done", "Done (last 30 days)", (j) => j.status === "Done"],
   ];
   const pre = wGroup.startsWith("co:") ? { vendor_company: (all[0] || {}).vendor_company || wGroup.slice(3).toUpperCase() } : wGroup.startsWith("tr:") ? { trade: wGroup.slice(3) }
-    : wGroup ? { vendor_key: wGroup, vendor_name: ((all[0] || {}).vendor_name) || "" } : {};
+    : wGroup && wGroup !== "none" ? { vendor_key: wGroup, vendor_name: ((all[0] || {}).vendor_name) || "" } : {};
   const card = (j) => {
     const late = OPEN.includes(j.status) && j.scheduled_on && j.scheduled_on < today;
     const next = j.status === "Open" || j.status === "Scheduled" ? `<button data-jst="In Progress" data-id="${esc(j.id)}">▶ Started</button>` : "";
@@ -824,7 +824,7 @@ function renderBoard(q, open, done) {
     if (id === "done") js.sort((a, b) => String(b.completed_on).localeCompare(String(a.completed_on)));
     if (id === "wait" && !js.length) return "";
     return `<div class="bcol"><h5>${esc(name)} <span>${js.length}</span></h5>${js.map(card).join("") || `<div class="bempty">Nothing here.</div>`}
-      ${id === "todo" ? `<button class="badd" data-form="job" data-pre='${esc(JSON.stringify(pre))}'>+ Add a work${wGroup ? " for " + esc(($("wgroup").querySelector("button.on") || {}).textContent.replace(/ · \d+$/, "")) : ""}</button>` : ""}
+      ${id === "todo" ? `<button class="badd" data-form="job" data-pre='${esc(JSON.stringify(pre))}'>+ Add a work${wGroup && wGroup !== "none" ? " for " + esc(($("wgroup").querySelector("button.on") || {}).textContent.replace(/ · \d+$/, "")) : ""}</button>` : ""}
       ${id === "sched" ? `<button class="badd" data-form="job" data-pre='${esc(JSON.stringify(Object.assign({ status: "Scheduled" }, pre)))}'>+ Schedule a work (or a repeat: 1 month, 2 months…)</button>` : ""}</div>`;
   }).join("")}</div><div class="muted" style="font-size:12px;margin-top:2px">Swipe sideways for the other columns. Tap a chip above to see one group only — e.g. 🏢 FCML: every FCML work, whichever FCML man comes.</div>`;
 }
