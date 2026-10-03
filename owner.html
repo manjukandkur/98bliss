@@ -173,7 +173,7 @@ body.nomoney .money,body.nomoney .sheet,body.nomoney #sheetLink,body.nomoney .bi
 <main id="tab-amc" class="hide"><div id="amcList"></div><div class="add"><a href="#" data-form="amc">+ Add AMC / warranty</a><a href="#" id="calSync" class="money">📅 Sync calendar</a><a href="#" class="sheet">All AMCs (sheet)</a></div></main>
 <!-- 3 Oct 2026 19:42 "can you bring in the calendar app within? same 98blisshome calendar just like contacts?" -->
 <main id="tab-cal" class="hide">
-  <div class="chips" id="calRange"><button data-cr="0,14" class="on">Next 2 weeks</button><button data-cr="0,60">Next 2 months</button><button data-cr="31,0">Past month</button></div>
+  <div class="chips" id="calRange"><button data-cr="0,14">Next 2 weeks</button><button data-cr="0,60" class="on">Next 2 months</button><button data-cr="31,0">Past month</button></div>
   <div class="add" style="margin-top:4px"><a href="#" id="calAdd">+ Add to calendar</a><a href="#" id="calOpenG" target="_blank">Open Google Calendar</a></div>
   <div class="muted" style="font-size:12.5px;margin:4px 0">98blisshome's calendar and the app's “98 Bliss House” calendar (AMC renewals, visits, works, dated mails) together.</div>
   <div id="calList"><div class="empty">Loading…</div></div>
@@ -464,6 +464,7 @@ function resolveSheet(id) {
     <button class="save" type="submit">✓ Resolve${ms.length > 1 ? " all " + ms.length : ""}</button></form>`);
   const f = $("resForm");
   const renTxt = () => { const a = amcs.find((x) => x.id === f.amc_id.value); if (!a || !a.end_date) return "Choose the AMC — the next period is worked out from its due date."; const e = a.end_date, y = Number(e.slice(0, 4)) + 1;
+    if ((new Date(e + "T12:00:00+05:30") - new Date(today() + "T12:00:00+05:30")) / 864e5 > 60) return `✓ Already renewed — runs to <b>${d(e)}</b>. Resolving just closes these mails; nothing is added twice.`;
     return `Same cycle, whenever it was paid: due <b>${d(e)}</b> → next period <b>${d(addDaysYmd(e, 1))} – ${d(y + e.slice(4))}</b>.`; };
   const setW = (w) => { f.what.value = w; f.querySelectorAll("[data-rw]").forEach((b) => b.classList.toggle("on", b.dataset.rw === w));
     f.querySelector(".rDue").classList.toggle("hide", w !== "due"); f.querySelector(".rPaid").classList.toggle("hide", w !== "paid");
@@ -500,7 +501,7 @@ function resolveSheet(id) {
   };
 }
 // ---- 📅 calendar inside the app (3 Oct 2026)
-let calRange = "0,14", calSeq = 0;
+let calRange = "0,60", calSeq = 0;
 async function loadCal() {
   document.querySelectorAll("#calRange [data-cr]").forEach((b) => b.classList.toggle("on", b.dataset.cr === calRange));
   const [back, ahead] = calRange.split(",").map(Number), mine = ++calSeq, ck = "cal" + calRange;
