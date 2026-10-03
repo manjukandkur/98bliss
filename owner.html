@@ -36,6 +36,15 @@ input,select{width:100%;padding:11px 12px;border:1px solid #cbd5e1;border-radius
 .wrow .w1{display:flex;gap:6px;align-items:baseline;flex-wrap:wrap}.wrow .pl{color:var(--muted);font-size:13px}
 .pri{font-size:10.5px;font-weight:700;padding:1px 6px;border-radius:999px}.pri.Urgent{background:#fee2e2;color:#991b1b}.pri.High{background:#fef3c7;color:#92400e}.pri.Low{background:#e5e7eb;color:#374151}
 .wait{font-size:12.5px;color:#92400e;margin-top:3px}.wrow .acts{margin-top:6px}
+/* 3 Oct 2026 "work like Trello": the Works board - one column per stage, swipe sideways on the phone */
+.board{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;padding:6px 2px 14px;margin:0 -4px;-webkit-overflow-scrolling:touch}
+.bcol{flex:0 0 min(84vw,300px);scroll-snap-align:start;background:#e8edf3;border-radius:14px;padding:8px;align-self:flex-start;max-height:none}
+.bcol h5{margin:2px 4px 8px;font-size:14px;display:flex;justify-content:space-between;color:#334155}.bcol h5 span{font-weight:400;color:#64748b}
+.bcard{background:#fff;border-radius:10px;padding:9px 10px;margin-bottom:8px;box-shadow:0 1px 2px rgba(0,0,0,.08);font-size:14px}
+.bcard .bt{font-weight:600}.bcard .bm{color:#64748b;font-size:12.5px;margin-top:3px}.bcard .bg{display:inline-block;background:#eff6ff;border:1px solid #bfdbfe;border-radius:999px;padding:1px 8px;font-size:12px;margin-top:5px}
+.bcard .acts{margin-top:7px}.bcard .acts button{padding:6px 9px;font-size:13px}.bcard.late{border-left:4px solid #dc2626}
+.bcol .badd{width:100%;border:1px dashed #94a3b8;background:transparent;border-radius:10px;padding:8px;font-size:14px;color:#1d4ed8;font-weight:600}
+.bempty{color:#94a3b8;font-size:13px;padding:6px 4px 10px}
 .thumbs{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}.thumbs img{width:56px;height:56px;object-fit:cover;border-radius:8px;cursor:pointer;background:#e5e7eb}
 .wphoto{display:flex;gap:10px;align-items:center}.wphoto .pbtn{margin:0;flex:1;text-align:center;padding:12px;border:2px dashed #94a3b8;border-radius:12px;font-size:15px;color:var(--ink)}
 #wPhotoPrev{width:64px;height:64px;object-fit:cover;border-radius:10px;display:none}
@@ -155,7 +164,8 @@ body.nomoney .money,body.nomoney .sheet,body.nomoney #sheetLink,body.nomoney .bi
 <main id="tab-jobs" class="hide">
   <div class="add" style="margin-top:4px"><a href="#" data-form="job">+ New work</a><a href="#" class="sheet">All works (sheet)</a></div>
   <form class="ask" id="wqForm" style="margin-top:8px"><input id="wq" type="search" enterkeyhint="search" placeholder="Search works: place, person, problem…" autocomplete="off"><button type="submit">🔍</button></form>
-  <div class="chips" id="wview"><button data-wv="person" class="on">By vendor</button><button data-wv="place">By place</button><button data-wv="all">All</button></div>
+  <div class="chips" id="wview"><button data-wv="board" class="on">▦ Board</button><button data-wv="person">By vendor</button><button data-wv="place">By place</button><button data-wv="all">All</button></div>
+  <div class="chips" id="wgroup"></div>
   <div class="chips" id="wstat"><button data-ws="pending" class="on">Pending</button><button data-ws="blocked">Waiting on other work</button><button data-ws="done">Done (all time)</button></div>
   <div id="wStats" class="muted"></div>
   <div id="jobList"></div>
@@ -339,7 +349,7 @@ function renderWho(r, quick) {
 
 // ---- one click handler for the whole page
 document.body.addEventListener("click", async (e) => {
-  const t = e.target.closest("[data-team],[data-bill],[data-hist],[data-form],[data-edit],[data-renew],[data-ask],[data-mail],[data-staff],[data-copy],[data-cact],[data-cf],[data-unrepl],[data-cur],[data-wv],[data-ws],[data-jst],[data-wph],[data-addph],.sheet,.close,#sheet,#docLink,#cRun,#calSync");
+  const t = e.target.closest("[data-team],[data-bill],[data-hist],[data-form],[data-edit],[data-renew],[data-ask],[data-mail],[data-staff],[data-copy],[data-cact],[data-cf],[data-unrepl],[data-cur],[data-wv],[data-wg],[data-mres],[data-ws],[data-jst],[data-wph],[data-addph],.sheet,.close,#sheet,#docLink,#cRun,#calSync");
   if (!t) return;
   if (t.tagName === "A" && !t.href.startsWith("tel:") && !t.href.startsWith("mailto:") && !t.href.includes("wa.me") && t.target !== "_blank") e.preventDefault();
   if (t.id === "sheet" && e.target !== t) return;
@@ -356,6 +366,7 @@ document.body.addEventListener("click", async (e) => {
   }
   if (t.dataset.addph) { wAddFor = t.dataset.addph; $("wAddPh").value = ""; $("wAddPh").click(); return; }
   if (t.dataset.wv) { wView = t.dataset.wv; return renderWorks(); }
+  if (t.dataset.wg !== undefined) { wGroup = t.dataset.wg; return renderWorks(); }
   if (t.dataset.ws) { wStat = t.dataset.ws; return renderWorks(); }
   if (t.dataset.jst === "Done") { const j = (W ? W.jobs : []).concat(data ? data.jobs : []).find((x) => x.id === t.dataset.id); if (j) return doneSheet(j, () => { loadWorks(); loadDash(); }); }
   if (t.dataset.jst) {
@@ -378,6 +389,7 @@ document.body.addEventListener("click", async (e) => {
     try { await call("renewAmc", t.dataset.renew); toast("✓ Renewed for 1 year"); loadDash(); } catch (err) { toast(err.message, 1); }
     return;
   }
+  if (t.dataset.mres) return resolveSheet(t.dataset.mres);
   if (t.dataset.mail) {
     try { await call("mailAction", t.dataset.id, t.dataset.mail); toast(t.dataset.mail === "ignore" ? "Ignored" : "✓ Done"); loadDash(); } catch (err) { toast(err.message, 1); }
     return;
@@ -393,6 +405,44 @@ document.body.addEventListener("click", async (e) => {
   if (t.dataset.form) return openForm(t.dataset.form, JSON.parse(t.dataset.pre || "{}"));
   if (t.dataset.edit) return openEdit(t.dataset.edit, t.dataset.id);
 });
+// ---- ✓ RESOLVE a mail item (3 Oct 2026): "how will I close … if no details are available in the email like entering a date of next amc
+// due or this payment done". He says what happened; the app writes it where it belongs (AMC dates, a payment, a reminder work).
+function resolveSheet(id) {
+  const m = (data ? data.mail : []).find((x) => x.id === id); if (!m) return;
+  const amcs = (data ? data.amc : []).filter((a) => a.status !== "Cancelled");
+  const same = amcs.find((a) => (m.person_key && a.vendor_key === m.person_key) || (m.trade && a.category === m.trade));
+  const money = data && data.money !== false;
+  openSheet(`<h3>✓ Resolve — ${esc(m.subject)}</h3><div class="muted" style="font-size:13px">${esc(m.from_name || m.from_email)} · ${d(m.received)}</div>
+    <form class="f" id="resForm">
+    <label>What happened?</label>
+    <div class="chips" id="resWhat">${money ? '<button type="button" data-rw="paid">💰 Payment done</button>' : ""}<button type="button" data-rw="due" class="on">📅 Next date</button><button type="button" data-rw="note">✓ Just close it</button></div>
+    <input type="hidden" name="what" value="due">
+    <label>About which AMC / warranty?</label><select name="amc_id"><option value="">— none (not an AMC) —</option>${amcs.map((a) => `<option value="${esc(a.id)}" ${same && a.id === same.id ? "selected" : ""}>${esc(a.equipment)}</option>`).join("")}</select>
+    <div class="rDue"><label>Which date?</label><select name="field"><option value="end">AMC renews / next AMC due</option><option value="payment">Payment due</option><option value="visit">Next service visit</option></select>
+      <div class="muted" style="font-size:12px">No AMC chosen → it becomes a scheduled work on that date (on the Works board and the calendar).</div></div>
+    <label class="rDate">Date</label><input class="rDate" type="date" name="date" value="${esc(m.due || "")}">
+    <div class="rPaid hide"><div class="row"><div><label>Amount ₹ (optional)</label><input name="amount" inputmode="decimal"></div>
+      <div><label>Mode</label><select name="mode">${opts(["Bank Transfer", "UPI", "Cheque", "Cash", "Card"], "Bank Transfer")}</select></div></div>
+      <div class="muted" style="font-size:12px">With an amount it is recorded under Money, with the mail's PDF as the bill.</div></div>
+    <label>Note (optional)</label><textarea name="note" placeholder="e.g. renewed by phone, office paid, not needed"></textarea>
+    <button class="save" type="submit">✓ Resolve</button></form>`);
+  const f = $("resForm");
+  const setW = (w) => { f.what.value = w; f.querySelectorAll("[data-rw]").forEach((b) => b.classList.toggle("on", b.dataset.rw === w));
+    f.querySelector(".rDue").classList.toggle("hide", w !== "due"); f.querySelector(".rPaid").classList.toggle("hide", w !== "paid");
+    f.querySelectorAll(".rDate").forEach((x) => x.classList.toggle("hide", w === "note"));
+    f.querySelector("label.rDate").textContent = w === "paid" ? "Paid on" : "Date"; if (w === "paid" && !f.date.value) f.date.value = today(); };
+  f.querySelectorAll("[data-rw]").forEach((b) => (b.onclick = () => setW(b.dataset.rw)));
+  setW("due");
+  f.addEventListener("keydown", (e) => { if (e.key === "Enter" && e.target.tagName !== "TEXTAREA") e.preventDefault(); });
+  f.onsubmit = async (ev) => {
+    ev.preventDefault();
+    const fd = Object.fromEntries(new FormData(f).entries());
+    if (fd.what !== "note" && !fd.date) return toast("Enter the date", 1);
+    const btn = f.querySelector(".save"); btn.disabled = true; btn.textContent = "Saving…";
+    try { const r = await call("mailResolve", id, fd); toast("✓ Resolved — " + r.said); closeSheet(); loadDash(); if (!$("tab-jobs").classList.contains("hide")) loadWorks(); }
+    catch (err) { toast(err.message, 1); btn.disabled = false; btn.textContent = "✓ Resolve"; }
+  };
+}
 function confirmBox(q) { return window.confirm(q); }
 function closeSheet() { $("sheet").classList.remove("open"); }
 function openSheet(html) { $("sheetBox").innerHTML = '<button class="close">×</button>' + html; $("sheet").classList.add("open"); }
@@ -504,6 +554,7 @@ const F = {
 // ---- "Who does it" picker (30 Sep 2026). Asks the server, so it works even before the works list has loaded.
 // Nothing is mandatory. Choose a PERSON (Anbu), a COMPANY ("🏢 FCML" - anyone from FCML) or a TRADE ("🔧 Plumbing - any plumber"),
 // or leave it empty ("not decided yet"). A person picked while searching a company keeps that company too.
+const WHO_CACHE = {};   // 3 Oct 2026: the picker shows the last answer for the same letters at once, Google's fresh one follows
 const whoPicker = (key, name, company, trade, peopleOnly) => {
   const chip = key ? esc(name || key) + (company ? " · 🏢 " + esc(company) : "") : company ? "🏢 " + esc(company) + " — anyone from " + esc(company) : trade ? "🔧 " + esc(trade) + " — anyone in this trade" : "";
   return `<div class="who" data-who${peopleOnly ? " data-people" : ""}>
@@ -527,10 +578,18 @@ function initWho(box, initialQuery) {
   const set = (f, v) => { const el = box.querySelector(`[name=${f}]`); if (el) el.value = v || ""; };
   let seq = 0, tm, lastCo = "";
   const show = async (text) => {
-    const mine = ++seq; list.innerHTML = '<small style="padding:6px">Looking…</small>';
+    const mine = ++seq;
+    const hit = WHO_CACHE[text.toLowerCase()];
+    if (hit) paint(hit, text); else list.innerHTML = '<small style="padding:6px">Looking…</small>';
     try {
-      let r = await call("whoList", text);
+      const r = await call("whoList", text);
       if (mine !== seq) return;
+      WHO_CACHE[text.toLowerCase()] = r;
+      paint(r, text);
+    } catch (e) { if (mine === seq && !hit) list.innerHTML = `<small style="padding:6px;color:#b00020">${esc(e.message)}</small>`; }
+  };
+  const paint = (r, text) => {
+    {
       if (peopleOnly) r = r.filter((p) => !p.type);
       lastCo = (r.find((p) => p.type === "company" && !p.isnew) || {}).company || "";
       list.innerHTML = r.length ? r.map((p) => p.type === "company"
@@ -539,7 +598,7 @@ function initWho(box, initialQuery) {
         ? `<button type="button" class="co" data-tr="${esc(p.trade)}">🔧 <b>${esc(p.label)}</b><small>General work — whichever ${esc(p.trade.toLowerCase())} person comes can do it</small></button>`
         : `<button type="button" data-k="${esc(p.key)}" data-n="${esc(p.name)}" data-c="${esc(p.company)}" data-t="${esc(p.trade)}">${p.current ? "⭐ " : ""}<b>${esc(p.name)}</b><small>${esc([p.trade, p.company, p.key.replace(/(\d{5})(\d{5})/, "$1 $2")].filter(Boolean).join(" · "))}${p.src === "contacts" ? " · from house contacts" : ""}</small></button>`).join("")
         : `<small style="padding:6px">Nobody found for “${esc(text)}”. Use ＋ Add new person.</small>`;
-    } catch (e) { if (mine === seq) list.innerHTML = `<small style="padding:6px;color:#b00020">${esc(e.message)}</small>`; }
+    }
   };
   const done = (label) => { box.classList.remove("adding"); ch.querySelector(".cn").innerHTML = label; ch.style.display = ""; q.style.display = "none"; q.value = ""; list.innerHTML = ""; };
   const pick = (k, n, c, t, co) => { set("vendor_key", k); set("vendor_name", n); set("vendor_company", c); set("vendor_trade", t); set("work_trade", ""); set("work_company", co || "");
@@ -596,8 +655,27 @@ async function openForm(kind, pre) {
     <button class="save" type="submit">Save</button></form>`);
   initWho(document.querySelector("#theForm [data-who]"));
   initRepeat($("theForm"));
+  // 3 Oct 2026 "the page jumped": the phone keyboard's Go / Search key in ANY box saved the half-filled form and closed it.
+  // Now Go only moves on: in "Who does it" it picks the first choice, elsewhere it goes to the next box. Only the green Save saves.
+  $("theForm").addEventListener("keydown", (e) => {
+    if (e.key !== "Enter" || e.target.tagName === "TEXTAREA" || e.target.type === "submit" || e.target.type === "button") return;
+    e.preventDefault();
+    if (e.target.classList.contains("wq")) { const b = e.target.closest(".who").querySelector(".wl button"); if (b) b.click(); return; }
+    const els = [...$("theForm").querySelectorAll("input:not([type=hidden]):not(.hide),select,textarea")].filter((x) => x.offsetParent);
+    const i = els.indexOf(e.target); if (els[i + 1]) els[i + 1].focus(); else e.target.blur();
+  });
   $("theForm").onsubmit = async (ev) => {
     ev.preventDefault();
+    // typed in "Who does it" but no choice tapped: take the exact match (FCML / plumber), else say so - never save it as "nobody"
+    { const wb = ev.target.querySelector("[data-who]"), wq = wb && wb.querySelector(".wq");
+      if (wq && wq.offsetParent && wq.value.trim()) {
+        const typed = wq.value.trim().toLowerCase();
+        const opts = [...wb.querySelectorAll(".wl button")];
+        const exact = opts.find((b) => (b.dataset.co || "").toLowerCase() === typed) || opts.find((b) => (b.dataset.tr || "").toLowerCase() === typed || (b.textContent || "").toLowerCase().startsWith("🔧 " + typed))
+          || opts.find((b) => (b.dataset.n || "").toLowerCase() === typed) || (opts.length === 1 ? opts[0] : null);
+        if (exact) exact.click();
+        else { wq.scrollIntoView({ block: "center" }); return toast("Who does it: tap one of the choices under the box — or clear it with × to leave it open", 1); }
+      } }
     const fd = Object.fromEntries(new FormData(ev.target).entries());
     { const re = repeatCheck(ev.target, fd); if (re) return toast(re, 1); }
     ev.target.querySelectorAll("select[multiple]").forEach((s) => (fd[s.name] = [...s.selectedOptions].map((x) => x.value).join(", ")));
@@ -612,7 +690,8 @@ async function openForm(kind, pre) {
           <input readonly value="${esc(r.link)}"><div class="acts"><button data-copy="${esc(r.link)}">Copy link</button><a class="wa" href="https:\/\/wa.me/?text=${encodeURIComponent(r.link)}">Send on WhatsApp</a></div>`);
         loadDash(); return;
       }
-      toast("✓ Saved"); closeSheet(); whoLast = null; loadWho(); loadDash(); if (!$("tab-jobs").classList.contains("hide")) loadWorks();
+      if (kind === "job" && r && r.job && W) { W.jobs = W.jobs.filter((x) => x.id !== r.job.id).concat([r.job]); lastCopy("works", W); renderWorks(); }   // on the board at once
+      toast(kind === "job" && r && r.job ? "✓ Saved — " + (r.job.group_title || "not assigned yet") : "✓ Saved"); closeSheet(); whoLast = null; loadWho(); loadDash(); if (!$("tab-jobs").classList.contains("hide")) loadWorks();
     } catch (err) { toast(err.message, 1); btn.disabled = false; btn.textContent = "Save"; }
   };
 }
@@ -622,7 +701,7 @@ function openEdit(kind, id) {
 }
 
 // ---- WORKS: house tasks by person / place, with "waits for" (28 Sep 2026)
-let W = null, wView = "person", wStat = "pending", wTimer, wSeq = 0, wAddFor = "";
+let W = null, wView = "board", wStat = "pending", wTimer, wSeq = 0, wAddFor = "", wGroup = "";
 function shrink(file, max, q) {
   return new Promise((res) => {
     const img = new Image();
@@ -665,9 +744,12 @@ async function loadWorks() {
 function renderWorks() {
   document.querySelectorAll("#wview button").forEach((b) => b.classList.toggle("on", b.dataset.wv === wView));
   document.querySelectorAll("#wstat button").forEach((b) => b.classList.toggle("on", b.dataset.ws === wStat));
+  $("wstat").classList.toggle("hide", wView === "board");
   if (!W) return;
   const q = $("wq").value.trim().toLowerCase();
   const open = W.jobs.filter((j) => OPEN.includes(j.status)), done = W.jobs.filter((j) => j.status === "Done");
+  if (wView === "board") return renderBoard(q, open, done);
+  $("wgroup").innerHTML = "";
   $("wStats").textContent = `${open.length} pending · ${open.filter((j) => j.blocked).length} waiting on other work · ${done.length} done so far`;
   let list = wStat === "done" ? done : wStat === "blocked" ? open.filter((j) => j.blocked) : open;
   if (q) list = list.filter((j) => [j.place, j.subject, j.vendor_name, j.vendor_company, j.done_by_name, j.description, j.trade].join(" ").toLowerCase().includes(q));
@@ -682,7 +764,7 @@ function renderWorks() {
     const title = wView === "person" ? (first.group_title || "Not assigned yet") : wView === "place" ? (g || "No place given") : "All works";
     const blk = js.filter((j) => j.blocked).length;
     const head = `<h4><span>${esc(title)} <span class="muted" style="font-weight:400;font-size:13px">· ${js.length}${wStat === "done" ? " done" : " pending"}${blk && wStat !== "blocked" ? ", " + blk + " waiting" : ""}</span></span>
-      <span>${wView === "person" && g && !/^(co|tr):/.test(g) ? `<button data-hist="${esc(g)}">History</button> ` : ""}${wView === "person" && first.vendor_key && first.vendor_mobile ? `<a class="call" href="${telHref(first.vendor_mobile)}">📞 Call</a>` : ""}</span></h4>`;
+      <span>${wView === "person" && g && !/^(co|tr):/.test(g) ? `<button data-hist="${esc(g)}">History</button> ` : wView === "person" && /^co:/.test(g) && first.vendor_key && js.every((x) => x.vendor_key === first.vendor_key) ? `<button data-hist="${esc(first.vendor_key)}">History</button> ` : ""}${wView === "person" && first.vendor_key && first.vendor_mobile ? `<a class="call" href="${telHref(first.vendor_mobile)}">📞 Call</a>` : ""}</span></h4>`;
     const rows = js.map((j) => `<div class="wrow">
       <div class="w1">${j.priority && j.priority !== "Normal" ? `<span class="pri ${esc(j.priority)}">${esc(j.priority.toUpperCase())}</span>` : ""}
         <b>${desk("job", j.id, j.subject)}</b>${rptLabel(j)}
@@ -699,6 +781,54 @@ function renderWorks() {
     return `<div class="wgrp">${head}${rows}${wStat === "done" ? "" : add}</div>`;
   }).join("");
 }
+
+// ---- ▦ BOARD (3 Oct 2026): "I want the works to work like Trello" - columns To do / Waiting / Scheduled / In progress / Done.
+// Each card says WHO it is for: 🏢 FCML (anyone from FCML), 🔧 any electrician, or one person (Dilip) - never forced.
+// The chips on top show one group's works only ("FCML" = everything FCML has to do, whichever FCML man comes).
+const grpOf = (j) => j.group || "";
+const grpTitle = (j) => j.group_title || "Not assigned yet";
+function renderBoard(q, open, done) {
+  const today = (W && W.today) || "";
+  let all = open.concat(done.filter((j) => !j.completed_on || j.completed_on >= addDaysYmd(today, -30)));
+  if (q) all = all.filter((j) => [j.place, j.subject, j.vendor_name, j.vendor_company, j.done_by_name, j.description, j.trade, j.group_title].join(" ").toLowerCase().includes(q));
+  const counts = {}, titles = {};
+  open.forEach((j) => { counts[grpOf(j)] = (counts[grpOf(j)] || 0) + 1; titles[grpOf(j)] = grpTitle(j); });
+  const gs = Object.keys(counts).sort((a, b) => (a === "" ? 1 : b === "" ? -1 : 0) || counts[b] - counts[a]);
+  if (wGroup && !(wGroup in counts) && !all.some((j) => grpOf(j) === wGroup)) wGroup = "";
+  $("wgroup").innerHTML = `<button data-wg="" class="${wGroup ? "" : "on"}">Everyone · ${open.length}</button>` +
+    gs.map((g) => `<button data-wg="${esc(g)}" class="${g === wGroup ? "on" : ""}">${esc(titles[g].replace(/ \(anyone from .*\)$/, "").replace(/ — any .*$/, ""))} · ${counts[g]}</button>`).join("");
+  if (wGroup !== "") all = all.filter((j) => grpOf(j) === wGroup);
+  $("wStats").textContent = `${open.length} to do in all · ${open.filter((j) => j.blocked).length} waiting on other work · ${done.length} done so far`;
+  const cols = [
+    ["todo", "To do", (j) => j.status === "Open" && !j.blocked],
+    ["wait", "Waiting on other work", (j) => OPEN.includes(j.status) && j.blocked],
+    ["sched", "Scheduled", (j) => j.status === "Scheduled" && !j.blocked],
+    ["prog", "In progress", (j) => j.status === "In Progress" && !j.blocked],
+    ["done", "Done (last 30 days)", (j) => j.status === "Done"],
+  ];
+  const pre = wGroup.startsWith("co:") ? { vendor_company: (all[0] || {}).vendor_company || wGroup.slice(3).toUpperCase() } : wGroup.startsWith("tr:") ? { trade: wGroup.slice(3) }
+    : wGroup ? { vendor_key: wGroup, vendor_name: ((all[0] || {}).vendor_name) || "" } : {};
+  const card = (j) => {
+    const late = OPEN.includes(j.status) && j.scheduled_on && j.scheduled_on < today;
+    const next = j.status === "Open" || j.status === "Scheduled" ? `<button data-jst="In Progress" data-id="${esc(j.id)}">▶ Started</button>` : "";
+    return `<div class="bcard${late ? " late" : ""}">
+      ${j.priority && j.priority !== "Normal" ? `<span class="pri ${esc(j.priority)}">${esc(j.priority.toUpperCase())}</span> ` : ""}<span class="bt">${desk("job", j.id, j.subject)}</span>
+      <div class="bm">${esc([j.place, j.scheduled_on && j.status !== "Done" ? (late ? "⚠ was due " : "due ") + dueTxt(j.scheduled_on) : "", j.status === "Done" ? "done " + dueTxt(j.completed_on) + (j.done_by_name ? " by " + j.done_by_name : "") : ""].filter(Boolean).join(" · "))}</div>
+      ${rptLabel(j)}
+      ${j.blocked ? `<div class="wait">⏳ after: ${j.waits_for.filter((w) => OPEN.includes(w.status)).map((w) => esc(w.subject)).join("; ")}</div>` : ""}
+      <div><span class="bg">${esc(grpTitle(j))}${j.vendor_company && j.vendor_name ? " → " + esc(j.vendor_name) : ""}</span>${(j.photos || []).length ? ` <span class="bm">📷 ${j.photos.length}</span>` : ""}</div>
+      <div class="acts">${OPEN.includes(j.status) ? next + `<button data-jst="Done" data-id="${esc(j.id)}">✓ Done</button>` : `<button data-jst="Open" data-id="${esc(j.id)}">↺ Reopen</button>`}<button data-edit="job" data-id="${esc(j.id)}">Edit</button></div></div>`;
+  };
+  $("jobList").innerHTML = `<div class="board">${cols.map(([id, name, test]) => {
+    const js = all.filter(test).sort((a, b) => (PRI[a.priority] ?? 2) - (PRI[b.priority] ?? 2) || String(a.scheduled_on || a.reported_on).localeCompare(String(b.scheduled_on || b.reported_on)));
+    if (id === "done") js.sort((a, b) => String(b.completed_on).localeCompare(String(a.completed_on)));
+    if (id === "wait" && !js.length) return "";
+    return `<div class="bcol"><h5>${esc(name)} <span>${js.length}</span></h5>${js.map(card).join("") || `<div class="bempty">Nothing here.</div>`}
+      ${id === "todo" ? `<button class="badd" data-form="job" data-pre='${esc(JSON.stringify(pre))}'>+ Add a work${wGroup ? " for " + esc(($("wgroup").querySelector("button.on") || {}).textContent.replace(/ · \d+$/, "")) : ""}</button>` : ""}
+      ${id === "sched" ? `<button class="badd" data-form="job" data-pre='${esc(JSON.stringify(Object.assign({ status: "Scheduled" }, pre)))}'>+ Schedule a work (or a repeat: 1 month, 2 months…)</button>` : ""}</div>`;
+  }).join("")}</div><div class="muted" style="font-size:12px;margin-top:2px">Swipe sideways for the other columns. Tap a chip above to see one group only — e.g. 🏢 FCML: every FCML work, whichever FCML man comes.</div>`;
+}
+const addDaysYmd = (ymd, n) => { if (!ymd) return ""; const t = new Date(ymd + "T12:00:00+05:30"); t.setDate(t.getDate() + n); return t.toISOString().slice(0, 10); };
 
 // ---- dashboard data
 // ---- contacts check (owner only)
@@ -778,7 +908,7 @@ function showDash(x) {
         ${a.mail_link ? `<a href="${esc(a.mail_link)}" target="_blank">Open email</a>` : ""}${billBtn(a.bill, "Bill")}${(a.pay_bills || []).map((b) => billBtn(b, b.label)).join("")}
         ${a.vendor_key ? `<button data-hist="${esc(a.vendor_key)}">History</button>` : ""}
         ${a.kind !== "Warranty" ? `<button data-form="job" data-pre='${esc(JSON.stringify({ amc_id: a.id, vendor_key: a.vendor_key, trade: a.category, job_type: "AMC Visit", status: "Scheduled", subject: a.equipment + " - AMC visit", scheduled_on: a.next_visit_due }))}'>Visit</button>` : ""}
-        <button class="money" data-form="payment" data-pre='${esc(JSON.stringify({ amc_id: a.id, vendor_key: a.vendor_key }))}'>Pay</button>
+        <button data-edit="amc" data-id="${esc(a.id)}">✏️ Dates</button><button class="money" data-form="payment" data-pre='${esc(JSON.stringify({ amc_id: a.id, vendor_key: a.vendor_key }))}'>Pay</button>
         ${a.status === "Renewal Due" || a.status === "Expired" ? `<button data-renew="${esc(a.id)}">Renew</button>` : ""}</div></div>`;
   }).join("") : '<div class="empty">No AMC or warranty yet — add them, or pick them from the Mail tab.</div>';
 
@@ -798,7 +928,7 @@ function showDash(x) {
       <div class="acts">${m.kind === "AMC / Renewal" || m.kind === "Warranty" ? `<button data-form="amc" data-pre='${esc(JSON.stringify(amcPre))}'>Make ${m.kind === "Warranty" ? "warranty" : "AMC"}</button>` : ""}
         ${upd ? `<button data-form="amc" data-pre='${esc(JSON.stringify(upd))}'>Update ${esc(same.equipment.slice(0, 14))}</button>` : ""}
         ${!m.person_key && phone ? `<button data-form="person" data-pre='${esc(JSON.stringify({ mail_id: m.id, mobile: phone, name: m.from_name, email: m.from_email, trades: m.trade }))}'>Add contact</button>` : ""}
-        <a href="${esc(m.link)}" target="_blank">Open</a><button data-mail="done" data-id="${esc(m.id)}">Done</button><button data-mail="ignore" data-id="${esc(m.id)}">Ignore</button></div></div>`;
+        <a href="${esc(m.link)}" target="_blank">Open</a><button class="mres" data-mres="${esc(m.id)}">✓ Resolve…</button><button data-mail="ignore" data-id="${esc(m.id)}">Ignore</button></div></div>`;
   }).join("") : '<div class="empty">Nothing new from mail.</div>';
 
   if (!$("tab-jobs").classList.contains("hide")) loadWorks();
